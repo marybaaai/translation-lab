@@ -1,6 +1,0 @@
-{
-  "name": "translation-lab",
-  "private": true,
-  "description": "それ、本当にあなたが訳したんですか？ — Translation Lab（翻訳選択実験）",
-  "engines": { "node": ">=18" }
-}

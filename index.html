@@ -189,6 +189,34 @@ textarea.ruled{width:100%;min-height:228px;resize:vertical;border:1px solid var(
 mark{background:none;color:inherit;padding:2px 0;border-bottom:2px solid transparent}
 mark.dim{background:none!important;border-bottom-color:transparent!important}
 .note-small{font-size:var(--s-xs);color:var(--ink-2);line-height:1.7}
+.self{display:flex;flex-direction:column;gap:22px;max-width:820px}
+.selfbox{background:#fff;border:1px solid var(--edge);padding:22px 26px 18px;display:flex;flex-direction:column;gap:6px}
+.selfnum{font-family:var(--f-display);font-size:60px;line-height:1.1;color:var(--ribbon);font-variant-numeric:tabular-nums;min-height:66px;display:flex;align-items:flex-end}
+.selfnum small{font-size:.45em;margin-left:4px}
+.selfnum.unset{font-family:var(--f-body);font-size:var(--s-md);color:var(--ink-3);align-items:center}
+input[type=range].ruler{-webkit-appearance:none;appearance:none;width:100%;height:58px;margin:0;background:transparent;cursor:pointer}
+.ruler::-webkit-slider-runnable-track{height:26px;border:1px solid #d2ad3a;border-radius:2px;background:repeating-linear-gradient(90deg,var(--ink-2) 0 1px,transparent 1px 5%) bottom/100% 9px no-repeat,repeating-linear-gradient(90deg,var(--ink) 0 2px,transparent 2px 25%) bottom/calc(100% + 2px) 16px no-repeat,var(--note-1)}
+.ruler::-moz-range-track{height:26px;border:1px solid #d2ad3a;border-radius:2px;background:repeating-linear-gradient(90deg,var(--ink-2) 0 1px,transparent 1px 5%) bottom/100% 9px no-repeat,repeating-linear-gradient(90deg,var(--ink) 0 2px,transparent 2px 25%) bottom/calc(100% + 2px) 16px no-repeat,var(--note-1)}
+.ruler::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:48px;margin-top:-12px;border-radius:2px;background:var(--ribbon);box-shadow:0 2px 4px rgba(0,0,0,.25)}
+.ruler::-moz-range-thumb{width:16px;height:48px;border:none;border-radius:2px;background:var(--ribbon);box-shadow:0 2px 4px rgba(0,0,0,.25)}
+.ruler:focus-visible{outline:3px solid var(--focus);outline-offset:4px}
+.scale{display:flex;justify-content:space-between;font-size:var(--s-xs);color:var(--ink-2);font-variant-numeric:tabular-nums}
+.scale.ends{color:var(--ink-3)}
+.rulebox{background:var(--paper-2);border-left:4px solid var(--gold);padding:18px 24px;display:flex;flex-direction:column;gap:8px;max-width:820px;font-size:var(--s-sm)}
+.rulebox h3{font-family:var(--f-body);font-size:var(--s-sm)}
+.rulebox .formula{font-weight:700;color:var(--ink)}
+.rulebox ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;color:var(--ink-2)}
+.score{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1.25fr);gap:14px;align-items:stretch}
+.sc{background:#fff;border:1px solid var(--edge);padding:14px 18px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.sc span{font-size:var(--s-xs);color:var(--ink-2)}
+.sc b{font-family:var(--f-display);font-size:var(--s-xxl);line-height:1.15;font-variant-numeric:tabular-nums}
+.sc b small{font-size:.5em}
+.sc em{font-style:normal;font-size:var(--s-xs);color:var(--ink-3)}
+.sc.total{background:var(--note-1);border-color:#d2ad3a}
+.sc.total b{color:var(--ribbon)}
+.op{align-self:center;font-size:28px;color:var(--ink-3)}
+.credit{display:block;margin-top:10px;font-family:var(--f-body);font-size:var(--s-xs);color:var(--ink-3);white-space:normal}
+.credit::before{content:"— "}
 .question{font-family:var(--f-display);font-size:var(--s-xl);text-align:center;padding:30px 10px 6px;border-top:1px solid var(--rule)}
 .hero{min-height:480px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:26px}
 .hero h1{font-size:clamp(30px,5vw,var(--s-xxl))}
@@ -205,6 +233,8 @@ mark.dim{background:none!important;border-bottom-color:transparent!important}
   .book::before{left:24px}
   .notes,.shelf,.picker,.fb,.cards,.cols,.report,.shelf.dirs,.cards.three,.cols.even{grid-template-columns:minmax(0,1fr)}
   .li{grid-template-columns:minmax(0,1fr);gap:2px}
+  .score{grid-template-columns:minmax(0,1fr)}
+  .op{justify-self:center;line-height:1}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.scribble path{stroke-dashoffset:0}}
 </style>
@@ -220,7 +250,60 @@ mark.dim{background:none!important;border-bottom-color:transparent!important}
   <main class="book"><div class="stage" id="stage" aria-live="polite"></div></main>
 </div>
 <div class="staff" id="staff" hidden></div>
-<script src="prompts.js"></script>
+<script>
+/* Translation Lab — AIへの指示文（プロンプト）
+   ブラウザ（claude.ai 版・独立版）とサーバー（api/generate.js）の両方がこのファイルを使います。
+   指示文を変えるときは、ここだけを書き換えてください。 */
+(function (root) {
+  "use strict";
+  var LANGS = ["日本語", "英語"];
+  var KINDS = ["sentence", "poem"];
+
+  function ab(p) {
+    var poem = p.kind === "poem";
+    return "あなたは" + p.from + "から" + p.to + "への翻訳者です。次の" + p.from + "の原文を" + p.to + "に訳し、2つの訳案を作ってください。\n" +
+      "- a：原文の語順や語の選び方に比較的忠実な訳。\n" +
+      "- b：" + p.to + "として自然に読めることを重視した訳。\n" +
+      "2つは同じくらいの完成度にし、どちらかが明らかに優れて見える差をつけないこと。説明や注釈は書かないこと。\n" +
+      (poem ? "原文は短い詩（俳句など）です。行の区切りは改行（\\n）で表してください。\n" : "") +
+      "出力は次の形のJSONだけにしてください。前後に説明やコードブロックを付けないこと：{\"a\": \"訳A\", \"b\": \"訳B\"}\n\n" +
+      "原文：\n\"\"\"\n" + p.source + "\n\"\"\"";
+  }
+
+  function feedback(p) {
+    var poem = p.kind === "poem";
+    return "あなたは翻訳ワークショップの進行役です。展示会場の来場者が、" + p.from + "の原文を" + p.to + "に訳しました。来場者は、AIの訳案Aと訳案Bを参考にできる状態で訳しています。\n" +
+      "来場者の訳に対する短いフィードバックを日本語で、新しい訳案Cを" + p.to + "で作ってください。\n\n" +
+      "ルール：\n" +
+      "- 点数・正誤判定・優劣の断定をしない。来場者の判断を否定しない。「〜という読み方もできます」「〜にすると、〜かもしれません」のような、提案の形で書く。\n" +
+      "- good：この表現の良いところ（1〜2文、70字以内）\n" +
+      "- gap：原文と少しずれているかもしれないところ（1〜2文、70字以内）。目立ったずれがなければ、そう伝えてよい。\n" +
+      "- natural：もう少し自然にできるかもしれないところ（1〜2文、70字以内）\n" +
+      "- c：原文から新しく" + p.to + "に訳した訳案C。訳A・訳B・来場者の訳のどれとも異なる言い回しを選ぶ。来場者の訳を書き直したものにはしない。説明は書かない。\n" +
+      (poem ? "- 原文は短い詩（俳句など）で、複数の解釈ができます。ひとつの解釈を正解として扱わず、解釈の余地を残して書く。cの行の区切りは改行（\\n）で表す。\n" : "") +
+      "出力は次の形のJSONだけにしてください。前後に説明やコードブロックを付けないこと：{\"good\": \"\", \"gap\": \"\", \"natural\": \"\", \"c\": \"\"}\n\n" +
+      "原文：\n\"\"\"\n" + p.source + "\n\"\"\"\n" +
+      "訳A：\n\"\"\"\n" + p.a + "\n\"\"\"\n" +
+      "訳B：\n\"\"\"\n" + p.b + "\n\"\"\"\n" +
+      "来場者の訳：\n\"\"\"\n" + p.mine + "\n\"\"\"";
+  }
+
+  function s(v) { return typeof v === "string" && v.trim() ? v.trim() : null; }
+  /* 返ってきたJSONが必要な項目をそろえているか確かめる */
+  function check(task, r) {
+    if (task === "ab") {
+      var a = s(r && r.a), b = s(r && r.b);
+      return a && b ? { a: a, b: b } : null;
+    }
+    var o = { good: s(r && r.good), gap: s(r && r.gap), natural: s(r && r.natural), c: s(r && r.c) };
+    return o.good && o.gap && o.natural && o.c ? o : null;
+  }
+
+  var api = { ab: ab, feedback: feedback, check: check, LANGS: LANGS, KINDS: KINDS };
+  if (typeof module === "object" && module.exports) module.exports = api;
+  else root.TLAB_PROMPTS = api;
+})(typeof globalThis !== "undefined" ? globalThis : this);
+</script>
 <script>
 /* =====================================================================
    設定と教材 — ここを書き換えれば、文章・判定基準・文言を差し替えられます
@@ -230,79 +313,134 @@ const CONFIG = {
   minMatchLength: 4,      // 日本語訳：空白・改行・句読点を除いて、連続して何文字一致したら「共通」とみなすか
   minMatchWords: 3,       // 英語訳：大文字・小文字と句読点を区別せず、連続して何語一致したら「共通」とみなすか
 
-  // AI生成の設定（claude.ai の機能を使用）
+  // AI生成の設定（claude.ai 版で使う設定）
   ai: {
     modelTier: "default",   // "quick"（速い）/ "default" / "complex"
     effort: "low",          // 考える量：low / medium / high
-    cacheAB: true,          // 同じ原文の訳A・Bを5分間再利用する（待ち時間・使用量の節約。claude.ai 版のみ）
-    endpoint: "/api/generate" // 独立版（Vercel）で使うAI接続先。claude.ai 版では使わない
+    cacheAB: true           // 同じ原文の訳A・Bを5分間再利用する（待ち時間・使用量の節約。claude.ai 版のみ）
+  },
+
+  // 独立版（HTMLファイル）の接続先：Google Apps Script のウェブアプリ。
+  // url には、デプロイ後に表示される「https://script.google.com/macros/s/……/exec」を貼り付けます。
+  // key は Apps Script の APP_KEY と同じ値にします。
+  backend: {
+    url: "",
+    key: "tlab-bO-iF2S5pN_FhNGBhThrTz8W"
   },
   forceTrial: false,        // true にすると常に試用モード
 
-  // 体験記録（【未確定】現在は保存しない。保存先が決まったら saveRecord() を実装）
+  // 体験記録：「同意して進む」を選んだ来場者の記録だけを、Google スプレッドシートに送ります。
+  // 同意しなかった来場者の記録は、どこにも送らず、保存もしません。
   recording: {
-    enabled: false,
     consentTitle: "体験の記録について",
     consentBody: [
-      "この体験では、あなたが選んだ選択肢と書いた翻訳を、名前など個人を特定できる情報を含まない形で記録し、作品の研究・振り返りに使わせていただく予定です。",
-      "同意しない場合も、体験はすべて同じようにお楽しみいただけます。"
+      "この体験では、あなたが選んだ選択肢、書いた翻訳、自己評価を、名前など個人を特定できる情報を含まない形で記録し、作品の研究・振り返りに使わせていただきます。",
+      "同意しない場合も、体験はすべて同じようにお楽しみいただけます。その場合、記録は一切残りません。"
     ],
-    disabledNote: "※ 試作版のため、現在は記録の保存を行っていません。"
+    disabledNote: "※ この画面では、現在は記録の保存を行っていません。"
   },
 
-  // 翻訳の方向と教材（仮）。どの原文も3文以内にすること。
-  // targetMode：訳文の一致を数える単位（"char"＝文字、"word"＝語）
-  // kind: "sentence" | "poem"。trial は試用モードで使う、あらかじめ用意した例文
+  // 翻訳の方向と教材。各レベルに3つの原文を用意し、体験ごとに順番に使います（同じ端末で同じ原文が2回続くことはありません）。
+  // どの原文も3文以内にすること。credit は画面に小さく表示する出典（不要なら消してください）。
+  // targetMode：訳文の一致を数える単位（"char"＝文字、"word"＝語）。trial は試用モードで使う、あらかじめ用意した例文
   directions: [
     { id: "ja-en", label: "日本語 → 英語", from: "日本語", to: "英語", targetMode: "word",
       desc: "日本語の文章を読んで、英語に訳します。",
       levels: [
         { id: 1, label: "Level 1", name: "短い文章", desc: "一文だけの、短い日本語の文です。", kind: "sentence",
-          source: "窓を開けると、金木犀の香りがした。",
-          trial: {
-            a: "When I opened the window, there was the scent of fragrant olive.",
-            b: "I opened the window and caught the scent of osmanthus.",
-            c: "Opening the window, I was met by the sweet smell of osmanthus."
-          } },
+          items: [
+            { source: "母の作る味噌汁は、いつも少しだけしょっぱい。",
+              trial: { a: "The miso soup my mother makes is always a little bit salty.",
+                       b: "My mom's miso soup is always just a little too salty.",
+                       c: "Mom's miso soup always comes out a touch on the salty side." } },
+            { source: "近所のパン屋は、日曜日だけ少し早く閉まる。",
+              trial: { a: "The bakery in my neighborhood closes a little early only on Sundays.",
+                       b: "The local bakery closes a bit early, but only on Sundays.",
+                       c: "On Sundays, and only then, the bakery down the street shuts a little early." } },
+            { source: "彼の字は、何度見てもなかなか読めない。",
+              trial: { a: "No matter how many times I look at it, his handwriting is hard to read.",
+                       b: "I can never quite read his handwriting, no matter how often I look.",
+                       c: "His handwriting still defeats me, however many times I look at it." } }
+          ] },
         { id: 2, label: "Level 2", name: "少し長い文章", desc: "二文ほどの、情景のある日本語の文章です。", kind: "sentence",
-          source: "久しぶりに実家に帰ると、母は何も聞かずにお茶を淹れてくれた。台所の時計は、相変わらず五分進んでいた。",
-          trial: {
-            a: "When I returned to my parents' home for the first time in a long while, my mother made tea for me without asking anything. The clock in the kitchen was, as always, five minutes fast.",
-            b: "When I went home after a long time away, my mother made me tea without asking a single question. The kitchen clock was still five minutes fast.",
-            c: "Home again after so long, I found my mother quietly making tea, asking nothing. The kitchen clock still ran five minutes ahead."
-          } },
-        { id: 3, label: "Level 3", name: "詩・俳句", desc: "日本語の俳句です。解釈はひとつではありません。", kind: "poem",
-          source: "読みさしの\n頁に眠る\n栞かな",
-          trial: {
-            a: "a bookmark\nsleeping in the page\nleft half-read",
-            b: "the bookmark\nstill asleep on the page\nwhere reading stopped",
-            c: "half-read —\na bookmark dozing\nbetween the pages"
-          } }
+          items: [
+            { source: "引っ越しの日、空っぽになった部屋は思ったより広かった。壁に残った画鋲の跡だけが、ここで暮らした三年間を覚えていた。",
+              trial: { a: "On moving day, the room that had become empty was wider than I had thought. Only the marks of the thumbtacks left on the wall remembered the three years I had lived here.",
+                       b: "On the day I moved out, the empty room felt bigger than I'd expected. Only the pinholes left in the wall remembered my three years there.",
+                       c: "Emptied out on moving day, the room was larger than I remembered. Just the little thumbtack holes in the wall still held on to my three years in it." } },
+            { source: "「いつでも連絡してね」と言われたけれど、その「いつでも」がいちばん難しい。結局、半年が過ぎてしまった。",
+              trial: { a: "I was told, \"Contact me anytime,\" but that \"anytime\" is the most difficult. In the end, half a year has passed.",
+                       b: "\"Get in touch anytime,\" they said, but \"anytime\" turns out to be the hardest time of all. Before I knew it, six months had gone by.",
+                       c: "\"Call me whenever,\" she said, and \"whenever\" is the hardest part. Somehow, six months have slipped away." } },
+            { source: "卒業してから、駅前の本屋が閉店したと聞いた。一冊も買わなかったことを少しだけ後悔している。",
+              trial: { a: "After I graduated, I heard that the bookstore in front of the station had closed. I slightly regret that I never bought even one book there.",
+                       b: "After graduating, I heard the bookshop by the station had closed. I regret, just a little, never having bought a single book there.",
+                       c: "Some time after graduation, word reached me that the bookstore by the station was gone. I'm a little sorry now that I never bought so much as one book from it." } }
+          ] },
+        { id: 3, label: "Level 3", name: "俳句", desc: "日本語の俳句です。解釈はひとつではありません。", kind: "poem",
+          items: [
+            { source: "古池や\n蛙飛びこむ\n水の音", credit: "松尾芭蕉",
+              trial: { a: "an old pond\na frog jumps in\nthe sound of water",
+                       b: "the old pond —\na frog leaps in,\nwater's sound",
+                       c: "still pond, old as ever —\none frog, then\nthe splash" } },
+            { source: "菜の花や\n月は東に\n日は西に", credit: "与謝蕪村",
+              trial: { a: "rape blossoms\nthe moon in the east\nthe sun in the west",
+                       b: "fields of mustard flowers —\nthe moon to the east,\nthe sun to the west",
+                       c: "yellow blossoms everywhere —\nmoon rising east,\nsun going down west" } },
+            { source: "これがまあ\n終の栖か\n雪五尺", credit: "小林一茶",
+              trial: { a: "so this, then,\nis my final dwelling place —\nfive feet of snow",
+                       b: "so this is it,\nmy last home on earth —\nfive feet of snow",
+                       c: "well, well —\nthe place I'll end my days,\nunder five feet of snow" } }
+          ] }
       ] },
     { id: "en-ja", label: "英語 → 日本語", from: "英語", to: "日本語", targetMode: "char",
       desc: "英語の文章を読んで、日本語に訳します。",
       levels: [
         { id: 1, label: "Level 1", name: "短い文章", desc: "一文だけの、短い英文です。", kind: "sentence",
-          source: "The rain stopped just as I reached the station.",
-          trial: {
-            a: "私が駅に着いたちょうどその時、雨が止んだ。",
-            b: "駅に着いたとたん、雨がやんだ。",
-            c: "駅に着いたころには、ちょうど雨が上がっていた。"
-          } },
+          items: [
+            { source: "The rain stopped just as I reached the station.",
+              trial: { a: "私が駅に着いたちょうどその時、雨が止んだ。",
+                       b: "駅に着いたとたん、雨がやんだ。",
+                       c: "駅に着いたころには、ちょうど雨が上がっていた。" } },
+            { source: "She laughed before I could finish the joke.",
+              trial: { a: "私が冗談を言い終える前に、彼女は笑った。",
+                       b: "冗談を言い終わらないうちに、彼女はもう笑っていた。",
+                       c: "オチまで言わせてもらえず、彼女は先に吹き出した。" } },
+            { source: "Some words only make sense when you say them out loud.",
+              trial: { a: "いくつかの言葉は、声に出して言ったときにだけ意味をなす。",
+                       b: "声に出してみて、はじめて意味がわかる言葉もある。",
+                       c: "口にしてみないと、腑に落ちない言葉というものがある。" } }
+          ] },
         { id: 2, label: "Level 2", name: "少し長い文章", desc: "二文ほどの、情景のある英文です。", kind: "sentence",
-          source: "My grandmother kept every letter she ever received in a tin box under her bed. When she died, we found them tied with ribbons of different colors, and it took us a whole winter to understand what each color meant.",
-          trial: {
-            a: "私の祖母は、これまでに受け取ったすべての手紙を、ベッドの下のブリキの箱にしまっていた。彼女が亡くなったとき、私たちはそれらが異なる色のリボンで結ばれているのを見つけ、それぞれの色が何を意味するのかを理解するのにまる一冬かかった。",
-            b: "祖母は、もらった手紙を一通残らず、ベッドの下の缶にしまっていた。祖母が亡くなったあと、手紙が色とりどりのリボンで束ねられているのが見つかった。それぞれの色に込められた意味がわかるまで、私たちはひと冬を費やした。",
-            c: "届いた手紙を、祖母はすべてベッドの下のブリキ缶に大切にしまっていた。亡くなってから見つかったその束は、色ちがいのリボンで結わえられていて、色ごとの意味を家族で読み解くのに、ひと冬まるごとかかった。"
-          } },
-        { id: 3, label: "Level 3", name: "詩・俳句", desc: "短い英語の俳句です。解釈はひとつではありません。", kind: "poem",
-          source: "an old bookmark\nstill holding the page\nwhere you stopped reading",
-          trial: {
-            a: "古いしおり\nまだそのページを押さえている\nあなたが読むのをやめたところ",
-            b: "古いしおり\nいまも挟まる\nきみが閉じたページ",
-            c: "古しおり\n君の読みさしを\nなお守る"
-          } }
+          items: [
+            { source: "We argued about which way was north for twenty minutes. By the time we agreed, the sun had already made the decision for us.",
+              trial: { a: "私たちは、どちらが北かについて二十分間言い争った。私たちが合意したときには、太陽がすでに私たちのために決定を下していた。",
+                       b: "どっちが北かで、二十分も言い合いになった。ようやく意見がまとまったころには、太陽がとっくに答えを出してくれていた。",
+                       c: "北はどっちかで、二十分も押し問答をした。決着がついたときには、もう太陽が勝手に決めてくれていた。" } },
+            { source: "My mother always hummed while she cooked, though she never finished a song. I still don't know the names of the tunes I grew up with.",
+              trial: { a: "母は料理をしているとき、いつもハミングしていたが、一曲を最後まで歌い終えることはなかった。私は今でも、自分が一緒に育った曲の名前を知らない。",
+                       b: "母は料理をしながら、いつも鼻歌をうたっていたけれど、一曲を最後まで歌いきることはなかった。子どものころから聴いてきたその曲の名前を、私はいまも知らない。",
+                       c: "台所に立つ母は、いつも鼻歌まじりだったが、どの歌も途中で終わってしまった。聴いて育ったはずの曲の名前を、私はいまだにひとつも知らない。" } },
+            { source: "Every New Year, my father writes the same three goals in a small notebook. He has never told us what they are, and we have never asked.",
+              trial: { a: "毎年新年に、父は小さなノートに同じ三つの目標を書く。彼は私たちにそれが何かを話したことはなく、私たちも聞いたことはない。",
+                       b: "毎年お正月になると、父は小さな手帳に同じ三つの目標を書きこむ。それが何なのか父は話したことがないし、私たちも聞いたことがない。",
+                       c: "正月が来るたび、父は小さな手帳に、いつもの三つの目標を書きつける。中身を父は明かさず、私たちもたずねずにいる。" } }
+          ] },
+        { id: 3, label: "Level 3", name: "短い詩", desc: "短い英語の詩です。解釈はひとつではありません。", kind: "poem",
+          items: [
+            { source: "Greatly shining,\nThe Autumn moon floats in the thin sky", credit: "Amy Lowell「Wind and Silver」より",
+              trial: { a: "大いに輝きながら、\n秋の月が薄い空に浮かぶ",
+                       b: "まばゆく光りながら\n秋の月が　淡い空に浮かんでいる",
+                       c: "照りわたり\n秋の月は　透けるような空にただよう" } },
+            { source: "Some say the world will end in fire, Some say in ice.\nFrom what I've tasted of desire\nI hold with those who favor fire.", credit: "Robert Frost「Fire and Ice」より",
+              trial: { a: "ある者は世界は火で終わると言い、ある者は氷でと言う。\n私が味わった欲望から言えば\n私は火を支持する者たちに賛成する。",
+                       b: "世界は火で終わると言う人もいれば、氷で終わると言う人もいる。\n欲望を味わってきた身としては\n私は火を選ぶ人たちの側に立つ。",
+                       c: "世界は炎に終わる、と言う人がいる。氷に、と言う人もいる。\n欲というものを少しは知っている私は\n炎だと言う人たちに、うなずく。" } },
+            { source: "I saw a star slide down the sky, blinding the north as it went by,\nToo burning and too quick to hold,\nToo lovely to be bought or sold", credit: "Sara Teasdale「The Falling Star」より",
+              trial: { a: "私は星が空を滑り落ちるのを見た、通り過ぎながら北を眩ませて、\n熱すぎて、速すぎて、つかむことができず、\n美しすぎて、売り買いすることもできない",
+                       b: "星がひとつ、空をすべり落ちていくのを見た　北の空をまばゆく照らして\n熱すぎて　速すぎて　手にとどめられず\n美しすぎて　売り買いなどできない",
+                       c: "流れ星が空をすべっていった　北をひととき目くらませて\nあまりに熱く　あまりに速く　つかめもせず\nあまりに美しく　値のつけようもない" } }
+          ] }
       ] }
   ],
 
@@ -323,11 +461,14 @@ const CONFIG = {
 
   workTitle: "それ、本当にあなたが訳したんですか？",
   question: "この翻訳の、どこまでがあなたの判断だったと思いますか？",
+  // 自己評価（レポートの前のページ）
+  selfQuestion: "この最終的な翻訳のうち、あなた自身の判断はどのくらいだったと思いますか？",
+  selfScale: { min: "自分の判断はほとんどない", max: "すべて自分の判断" },
+  selfWeight: 0.5,          // 「あなたの判断（参考値）」のうち、自己評価が占める割合。残りは「AI案と共通しない表現」の割合
   matchNote: "表現の一致は、AIの影響や翻訳の独自性を直接示すものではありません。"
 };
 
 /* 体験記録の保存（未実装）。保存先が決まったら、ここに処理を書く */
-async function saveRecord(record){ if(!CONFIG.recording.enabled) return; /* TODO */ }
 
 /* =====================================================================
    スタッフ用設定（Ctrl + Alt + S で開閉）。このブラウザにだけ保存されます
@@ -339,19 +480,20 @@ loadStaff();
 /* =====================================================================
    状態
    ===================================================================== */
-const STEPS = ["はじめに","方向","難易度","原文","翻訳","見直し","レポート"];
-const STEP_OF = { intro:0, consent:0, direction:1, level:2, read:3, translate:4, review:5, revise:5, report:6 };
+const STEPS = ["はじめに","方向","難易度","原文","翻訳","見直し","自己評価","レポート"];
+const STEP_OF = { intro:0, consent:0, direction:1, level:2, read:3, translate:4, review:5, revise:5, self:6, report:7 };
 const stepNo = v => STEP_OF[v] + 1;
 let state;
 function freshState(){
   return {
-    view:"intro", consent:null, direction:null, level:null, comprehension:null,
+    view:"intro", sessionId:null, startedAt:null, consent:null, direction:null, level:null, itemIdx:null, comprehension:null,
     ab:null, abError:null, abLoading:false,
     method:null, methodFirst:null, methodChanges:[], pendingMethod:null,
     draft:"", firstSubmission:"",
     fb:null, fbError:null, fbLoading:false,
     decision:null, reviseDraft:"", final:"",
-    hlFilter:"all", printMsg:""
+    selfScore:50, selfTouched:false,
+    hlFilter:"all"
   };
 }
 state = freshState();
@@ -366,25 +508,68 @@ const inClaude = !!(window.claude && typeof window.claude.use==="function");
 const samplePromise = (async()=>{
   try{ if(!inClaude) return null; return await window.claude.use("sample"); }catch(e){ return null; }
 })();
-const downloadsPromise = (async()=>{
-  try{ if(!inClaude) return null; return await window.claude.use("downloads"); }catch(e){ return null; }
-})();
-async function pingApi(){
-  if(!CONFIG.ai.endpoint || !window.TLAB_PROMPTS) return false;
+/* 独立版の接続先（Google Apps Script）とのやりとり。
+   Content-Type を text/plain にして送ると、ブラウザの事前確認なしで Apps Script に届きます */
+let backendOk = false;
+async function postBackend(payload, signal){
+  const r = await fetch(CONFIG.backend.url, {
+    method:"POST", redirect:"follow", signal,
+    headers:{ "content-type":"text/plain;charset=utf-8" },
+    body: JSON.stringify({ key: CONFIG.backend.key, ...payload })
+  });
+  return r.json();
+}
+async function pingBackend(){
+  if(inClaude || !CONFIG.backend.url) return null;
   try{
-    const ctl = new AbortController(); const t = setTimeout(()=>ctl.abort(), 6000);
-    const r = await fetch(CONFIG.ai.endpoint, { method:"GET", signal:ctl.signal, cache:"no-store" });
+    const ctl = new AbortController(); const t = setTimeout(()=>ctl.abort(), 10000);
+    const r = await fetch(CONFIG.backend.url + (CONFIG.backend.url.includes("?")?"&":"?") + "action=ping", { method:"GET", redirect:"follow", signal:ctl.signal, cache:"no-store" });
     clearTimeout(t);
-    if(!r.ok) return false;
-    const j = await r.json(); return !!(j && j.ok && j.configured);
-  }catch(e){ return false; }
+    const j = await r.json();
+    return j && j.ok ? j : null;
+  }catch(e){ return null; }
 }
 (async()=>{
-  if(CONFIG.forceTrial){ aiMode="trial"; paintMode(); return; }
   const s = await samplePromise;
-  if(s && window.TLAB_PROMPTS){ aiMode="sample"; paintMode(); return; }
-  aiMode = (await pingApi()) ? "api" : "trial"; paintMode();
+  if(s && window.TLAB_PROMPTS && !CONFIG.forceTrial){ aiMode="sample"; paintMode(); return; }
+  const ping = await pingBackend();
+  backendOk = !!ping;
+  aiMode = (!CONFIG.forceTrial && ping && ping.configured && window.TLAB_PROMPTS) ? "api" : "trial";
+  paintMode();
+  if(backendOk) flushPending();
 })();
+
+/* 体験記録：同意した来場者の記録だけを送る。送れなかった記録はこの端末に一時保管し、接続が戻ったら送り直す */
+const PENDING_KEY = "tlab-pending";
+let pendingMem = [];
+function recordingActive(){ return !inClaude && !!CONFIG.backend.url; }
+function loadPending(){ try{ const v = JSON.parse(localStorage.getItem(PENDING_KEY) || "null"); if(Array.isArray(v)) return v; }catch(e){} return pendingMem.slice(); }
+function storePending(list){ pendingMem = list.slice(); try{ localStorage.setItem(PENDING_KEY, JSON.stringify(list)); }catch(e){} }
+let flushing = false;
+async function flushPending(){
+  if(flushing || !recordingActive()) return;
+  flushing = true;
+  try{
+    for(const rec of loadPending()){
+      let ok = false;
+      try{ const j = await postBackend({ action:"record", record:rec }); ok = !!(j && j.ok); }catch(e){ ok = false; }
+      if(!ok) break;
+      storePending(loadPending().filter(r=>r.id!==rec.id));
+    }
+  }finally{ flushing = false; paintPending(); }
+}
+function saveRecord(record){
+  if(!record || !recordingActive()) return;
+  storePending([...loadPending().filter(r=>r.id!==record.id), record]);
+  flushPending();
+}
+setInterval(()=>{ if(loadPending().length) flushPending(); }, 60000);
+function paintPending(){ const el=document.getElementById("sPending"); if(el) el.textContent = pendingText(); }
+function pendingText(){
+  if(!recordingActive()) return "この画面では記録を送りません。";
+  const n = loadPending().length;
+  return (backendOk ? "接続：OK" : "接続：確認できません") + "　／　未送信の記録：" + n + "件";
+}
 
 function paintMode(){
   const m = document.getElementById("mode");
@@ -406,7 +591,28 @@ function errCopy(e){
   return "AIの生成に失敗しました。入力内容はそのまま残っています。もう一度お試しください。";
 }
 function dir(){ return CONFIG.directions.find(d=>d.id===state.direction) || CONFIG.directions[0]; }
-function lvl(){ return dir().levels.find(l=>l.id===state.level); }
+// いま体験中のレベルと、その中で使っている原文（items のうち1つ）を合わせて返す
+function lvl(){
+  const l = dir().levels.find(l=>l.id===state.level); if(!l) return undefined;
+  const it = (l.items && l.items[state.itemIdx]) || (l.items && l.items[0]) || {};
+  return { ...l, ...it };
+}
+// 原文の順番：レベルごとに3つの原文を順に使う。同じ端末で同じ原文が2回続かないよう、前回の番号をこの端末に覚えておく
+const rotMem = {};
+function nextItem(dirId, levelId, n){
+  const key = `tlab-rot-${dirId}-${levelId}`;
+  let last = rotMem[key];
+  try{ const v = localStorage.getItem(key); if(v!==null && !isNaN(parseInt(v,10))) last = parseInt(v,10); }catch(e){}
+  const idx = Number.isInteger(last) ? (last+1) % n : Math.floor(Math.random()*n);
+  rotMem[key] = idx;
+  try{ localStorage.setItem(key, String(idx)); }catch(e){}
+  return idx;
+}
+// 原文の表示（出典があれば小さく添える。番号は表示しない）
+function srcHTML(l, cls){
+  return `<div class="${cls}">${esc(l.source)}${l.credit?`<span class="credit">${esc(l.credit)}</span>`:""}</div>`;
+}
+function matchRule(){ return dir().targetMode==="word" ? `連続して${CONFIG.minMatchWords}語以上（大文字・小文字と句読点は区別しない）` : `連続して${CONFIG.minMatchLength}文字以上（空白・改行・句読点を除く）`; }
 function matchK(){ return dir().targetMode==="word" ? CONFIG.minMatchWords : CONFIG.minMatchLength; }
 function str(v){ return typeof v==="string" && v.trim() ? v.trim() : null; }
 
@@ -422,15 +628,14 @@ async function askAI(task, data, signal){
     if(!out) throw { code:"invalid_json" };
     return out;
   }
-  let r;
+  let j = null;
   try{
-    r = await fetch(CONFIG.ai.endpoint, { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify({ task, ...data }), signal });
+    j = await postBackend({ action:"ai", task, ...data }, signal);
   }catch(e){
     if(e && e.name==="AbortError") throw { code:"cancelled" };
     throw { code: navigator.onLine===false ? "offline" : "upstream_error" };
   }
-  let j = null; try{ j = await r.json(); }catch(e){}
-  if(!r.ok || !j || !j.result) throw { code:(j && j.error && j.error.code) || (r.status===429 ? "rate_limited" : "upstream_error") };
+  if(!j || !j.result) throw { code:(j && j.error && j.error.code) || "upstream_error" };
   const out = P.check(task, j.result);
   if(!out) throw { code:"invalid_json" };
   return out;
@@ -537,7 +742,12 @@ function paintTabs(){
   const cur = STEP_OF[state.view];
   $("#tabs").innerHTML = STEPS.map((s,i)=>`<div class="tab ${i<cur?"done":i===cur?"now":""}" ${i===cur?'aria-current="step"':""}><i>${i+1}</i>${esc(s)}</div>`).join("");
 }
-function go(view){ state.view=view; render(); window.scrollTo({top:0}); const h=$("#stage h1, #stage h2"); if(h){ h.setAttribute("tabindex","-1"); h.focus({preventScroll:true}); } }
+function go(view){
+  state.view=view; render(); window.scrollTo({top:0});
+  const af=$("#stage [data-autofocus]");
+  if(af){ af.focus({preventScroll:true}); if(af.tagName==="TEXTAREA") af.setSelectionRange(af.value.length, af.value.length); return; }
+  const h=$("#stage h1, #stage h2"); if(h){ h.setAttribute("tabindex","-1"); h.focus({preventScroll:true}); }
+}
 
 /* 「もどる」ボタン：各画面から、ひとつ前の画面にもどって選び直せる */
 const BACK = {
@@ -547,10 +757,11 @@ const BACK = {
   read:      { to:"level",     label:"文章の選択にもどる" },
   translate: { to:"read",      label:"原文と理解度の選択にもどる" },
   review:    { to:"translate", label:"翻訳の編集にもどる" },
-  revise:    { to:"review",    label:"コメントと訳Cにもどる" }
+  revise:    { to:"review",    label:"コメントと訳Cにもどる" },
+  report:    { to:"self",      label:"自己評価にもどる" }
 };
 function backTarget(){
-  if(state.view==="report") return state.decision==="revise" ? { to:"revise", label:"翻訳の修正にもどる" } : { to:"review", label:"「修正するか」の選択にもどる" };
+  if(state.view==="self") return state.decision==="revise" ? { to:"revise", label:"翻訳の修正にもどる" } : { to:"review", label:"「修正するか」の選択にもどる" };
   return BACK[state.view] || null;
 }
 function backBtn(){
@@ -563,7 +774,8 @@ function goBack(){
   state.pendingMethod = null;
   if(v==="review") cancelFeedback();          // 編集にもどる：再提出すると、コメントと訳Cを作り直す
   if(v==="revise") state.decision = null;     // 修正中の文章は残す
-  if(v==="report"){ if(state.decision==="keep") state.decision=null; state.final=""; state.printMsg=""; state.hlFilter="all"; }
+  if(v==="self"){ if(state.decision==="keep") state.decision=null; state.final=""; }
+  if(v==="report") state.hlFilter="all";
   go(b.to);
 }
 function render(){
@@ -593,7 +805,7 @@ consent(){ const r=CONFIG.recording; return `
     <div class="eyebrow">はじめる前に</div>
     <h2>${esc(r.consentTitle)}</h2>
     <div class="box">${r.consentBody.map(p=>`<p>${esc(p)}</p>`).join("")}
-      ${r.enabled?"":`<p class="hint">${esc(r.disabledNote)}</p>`}</div>
+      ${recordingActive()?"":`<p class="hint">${esc(r.disabledNote)}</p>`}</div>
     <div class="row">
       <button class="bookmark" id="agree">同意して進む</button>
       <button class="ghost" id="disagree">同意せずに体験する</button>
@@ -616,7 +828,7 @@ level(){ return `
 
 read(){ const l=lvl(); return `
   <div><div class="eyebrow">STEP ${stepNo("read")} ・ ${esc(dir().label)} ・ ${esc(l.label)} ${esc(l.name)}</div><h2>まず、原文を読んでください</h2></div>
-  <div class="source">${esc(l.source)}</div>
+  ${srcHTML(l,"source")}
   <div style="display:flex;flex-direction:column;gap:22px">
     <h3 style="font-size:var(--s-lg)">この文章を、自分で訳せそうですか？</h3>
     <div class="notes" role="group" aria-label="理解度">
@@ -652,7 +864,7 @@ translate(){ const l=lvl();
   return `
   <div><div class="eyebrow">STEP ${stepNo("translate")} ・ ${esc(dir().label)} ・ ${esc(l.label)} ${esc(l.name)}</div><h2>訳案を読んで、あなたの訳をつくってください</h2></div>
   <div class="wide">
-    <div><div class="hint" style="margin-bottom:6px">原文</div><div class="source small">${esc(l.source)}</div></div>
+    <div><div class="hint" style="margin-bottom:6px">原文</div>${srcHTML(l,"source small")}</div>
     ${abHtml}
   </div>
   <div class="wide work">
@@ -702,7 +914,7 @@ review(){ const l=lvl(); const fb=state.fb;
 revise(){ const l=lvl(); return `
   <div><div class="eyebrow">STEP ${stepNo("revise")} ・ 修正</div><h2>あなたの訳を、もう一度書き直せます</h2></div>
   <div class="wide">
-    <div><div class="hint" style="margin-bottom:6px">原文</div><div class="source small">${esc(l.source)}</div></div>
+    <div><div class="hint" style="margin-bottom:6px">原文</div>${srcHTML(l,"source small")}</div>
     <div class="cards three">
       <div class="card"><span class="tag">訳A</span><div class="body">${esc(state.ab.a)}</div></div>
       <div class="card"><span class="tag">訳B</span><div class="body">${esc(state.ab.b)}</div></div>
@@ -713,10 +925,35 @@ revise(){ const l=lvl(); return `
     <div class="card mineprev"><span class="tag">編集前のあなたの訳</span><div class="body">${esc(state.firstSubmission)}</div></div>
     <div class="editor">
       <label for="draft2">あなたの翻訳（修正版）</label>
-      <textarea class="ruled" id="draft2" spellcheck="false" style="min-height:300px">${esc(state.reviseDraft)}</textarea>
+      <textarea class="ruled" id="draft2" data-autofocus spellcheck="false" style="min-height:300px">${esc(state.reviseDraft)}</textarea>
       <div class="row"><button class="bookmark" id="submit2" ${state.reviseDraft.trim()?"":"disabled"}>この翻訳で完成する</button>
       <span class="hint" id="h2">${state.reviseDraft.trim()?`<span class="kbd">Ctrl</span> + <span class="kbd">Enter</span> でも完成できます`:"空欄のままでは完成できません"}</span></div>
     </div>
+  </div>`; },
+
+self(){ const sc=CONFIG.selfScale; const w=Math.round(CONFIG.selfWeight*100); const rule=matchRule(); return `
+  <div><div class="eyebrow">STEP ${stepNo("self")}</div><h2>あなた自身の評価</h2></div>
+  <div class="self">
+    <div><div class="hint" style="margin-bottom:6px">あなたの最終的な翻訳</div><div class="mine">${esc(state.final)}</div></div>
+    <h3 style="font-size:var(--s-lg)" id="selfQ">${esc(CONFIG.selfQuestion)}</h3>
+    <div class="selfbox">
+      <output class="selfnum ${state.selfTouched?"":"unset"}" id="selfNum" for="selfRange">${state.selfTouched?`${state.selfScore}<small>%</small>`:"目盛りを動かして選んでください"}</output>
+      <input type="range" class="ruler" id="selfRange" data-autofocus min="0" max="100" step="5" value="${state.selfScore}" aria-labelledby="selfQ" aria-valuetext="${state.selfScore}%">
+      <div class="scale" aria-hidden="true"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
+      <div class="scale ends" aria-hidden="true"><span>${esc(sc.min)}</span><span>${esc(sc.max)}</span></div>
+    </div>
+    <div class="row"><button class="bookmark" id="toReport" ${state.selfTouched?"":"disabled"}>この評価でレポートを見る</button>
+      <span class="hint"><span class="kbd">←</span> <span class="kbd">→</span> キーで5%ずつ動かせます</span></div>
+  </div>
+  <div class="rulebox">
+    <h3>レポートの数値の出し方</h3>
+    <p class="formula">あなたの判断（参考値）＝ 自己評価 × ${w}% ＋ AI案と共通しない表現の割合 × ${100-w}%</p>
+    <ul>
+      <li><b>自己評価</b>：このページで選んだ割合です。</li>
+      <li><b>AI案と共通しない表現の割合</b>：最終的な翻訳のうち、訳A・B・Cのどれとも${esc(rule)}一致しなかった部分の割合です。</li>
+      <li>例：自己評価が60%、共通しない表現が40%なら、${Math.round((60*w+40*(100-w))/10)/10}%になります。</li>
+    </ul>
+    <p class="note-small">${esc(CONFIG.matchNote)}</p>
   </div>`; },
 
 report(){ const l=lvl(); const R=buildReport();
@@ -731,20 +968,31 @@ report(){ const l=lvl(); const R=buildReport();
       </div>
       <p class="note-small">複数の訳案と同時に共通する部分は、それぞれの訳案に数えています。そのため内訳の合計は「共通する表現」の値を超えることがあります。</p>`
     : `<p>最終翻訳から比べられる${R.unit}がないため、割合を算出できません。</p>`;
+  const w = Math.round(CONFIG.selfWeight*100);
+  const score = `<div class="score" role="group" aria-label="あなたの判断（参考値）の内訳">
+      <div class="sc"><span>自己評価</span><b>${state.selfScore}<small>%</small></b><em>× ${w}%</em></div>
+      <div class="op" aria-hidden="true">＋</div>
+      <div class="sc"><span>AI案と共通しない表現</span><b>${R.an.ok?R.otherPct:"—"}<small>${R.an.ok?"%":""}</small></b><em>× ${100-w}%</em></div>
+      <div class="op" aria-hidden="true">＝</div>
+      <div class="sc total"><span>あなたの判断（参考値）</span><b>${R.combined===null?"—":R.combined}<small>${R.combined===null?"":"%"}</small></b><em>${R.combined===null?"共通しない表現の割合を算出できないため、合計は出せません":"自己評価とAI案との比較を半分ずつ合わせた値"}</em></div>
+    </div>
+    <p class="note-small">計算：自己評価 × ${w}% ＋ AI案と共通しない表現の割合 × ${100-w}%。${esc(CONFIG.matchNote)}</p>`;
   return `
   <div class="row" style="justify-content:space-between"><div><div class="eyebrow">STEP ${stepNo("report")}</div><h2>翻訳レポート</h2></div><span class="stamp">${esc(R.dateStr)}</span></div>
+  ${score}
   <div class="report">
     <div class="lcard">
       <h3>あなたの翻訳の記録</h3>
       <dl style="margin:0">
         <div class="li"><dt>翻訳の方向</dt><dd>${esc(dir().label)}</dd></div>
         <div class="li"><dt>難易度</dt><dd>${esc(l.label)}　${esc(l.name)}</dd></div>
-        <div class="li"><dt>原文</dt><dd class="en">${esc(l.source)}</dd></div>
+        <div class="li"><dt>原文</dt><dd class="en">${esc(l.source)}${l.credit?`<span class="credit">${esc(l.credit)}</span>`:""}</dd></div>
         <div class="li"><dt>AIの訳を見る前の理解度</dt><dd>${esc(R.comp)}</dd></div>
         <div class="li"><dt>最初に選んだ方法</dt><dd>${esc(R.method)}</dd></div>
         <div class="li"><dt>最初に提出した翻訳</dt><dd class="hand">${esc(state.firstSubmission)}</dd></div>
         <div class="li"><dt>コメントと訳Cを見た後</dt><dd>${esc(R.revised)}</dd></div>
-        <div class="li" style="border-bottom:none"><dt>最終的な翻訳</dt><dd class="hand">${esc(state.final)}</dd></div>
+        <div class="li"><dt>最終的な翻訳</dt><dd class="hand">${esc(state.final)}</dd></div>
+        <div class="li" style="border-bottom:none"><dt>自己評価</dt><dd>あなた自身の判断：${state.selfScore}%</dd></div>
       </dl>
     </div>
     <div class="meter">
@@ -761,10 +1009,8 @@ report(){ const l=lvl(); const R=buildReport();
   </div>`:""}
   <p class="question">${esc(CONFIG.question)}</p>
   <div class="row" style="justify-content:center">
-    <button class="ghost" id="print">レポートを印刷する</button>
     <button class="bookmark" id="next">次の方へ／最初に戻る</button>
-  </div>
-  <p class="hint" style="text-align:center" id="printMsg">${esc(state.printMsg)}</p>`; }
+  </div>`; }
 };
 
 /* =====================================================================
@@ -785,7 +1031,10 @@ function bindEditor(id, key, btnId, hintId, okHint, emptyHint, onSubmit){
 }
 const BIND = {
   intro(){ $("#start").onclick=()=>go("consent"); },
-  consent(){ $("#agree").onclick=()=>{state.consent=true;go("direction");}; $("#disagree").onclick=()=>{state.consent=false;go("direction");}; },
+  consent(){
+    const begin = agree => { state.consent=agree; if(!state.sessionId){ state.sessionId=newId(); state.startedAt=new Date().toISOString(); } go("direction"); };
+    $("#agree").onclick=()=>begin(true); $("#disagree").onclick=()=>begin(false);
+  },
   direction(){ document.querySelectorAll("[data-dir]").forEach(b=>b.onclick=()=>chooseDirection(b.dataset.dir)); },
   level(){ document.querySelectorAll("[data-level]").forEach(b=>b.onclick=()=>chooseLevel(+b.dataset.level)); },
   read(){
@@ -814,26 +1063,33 @@ const BIND = {
     bindEditor("#draft2","reviseDraft","#submit2","#h2",`<span class="kbd">Ctrl</span> + <span class="kbd">Enter</span> でも完成できます`,"空欄のままでは完成できません",()=>{
       state.final = state.reviseDraft.trim(); finish();
     });
-    const ta=$("#draft2"); ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length);
+  },
+  self(){
+    const r=$("#selfRange"), out=$("#selfNum"), btn=$("#toReport");
+    const touch=()=>{ state.selfScore=+r.value; state.selfTouched=true; r.setAttribute("aria-valuetext",state.selfScore+"%");
+      out.classList.remove("unset"); out.innerHTML=`${state.selfScore}<small>%</small>`; btn.disabled=false; };
+    r.addEventListener("input",touch);
+    r.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); if(state.selfTouched) submitSelf(); } });
+    btn.onclick=submitSelf;
   },
   report(){
     document.querySelectorAll("[data-hl]").forEach(b=>b.onclick=()=>{ state.hlFilter=b.dataset.hl; render(); const f=document.querySelector(`[data-hl="${state.hlFilter}"]`); f&&f.focus(); });
-    $("#print").onclick=printCard;
     $("#next").onclick=reset;
   }
 };
 function chooseDirection(id){
   if(state.direction!==id){
     cancelAB(); cancelFeedback();
-    Object.assign(state,{ direction:id, level:null, comprehension:null, ab:null, abError:null, method:null, methodFirst:null, methodChanges:[], pendingMethod:null,
+    Object.assign(state,{ direction:id, level:null, itemIdx:null, comprehension:null, ab:null, abError:null, method:null, methodFirst:null, methodChanges:[], pendingMethod:null,
       draft:"", firstSubmission:"", decision:null, reviseDraft:"", final:"" });
   }
   go("level");
 }
 function chooseLevel(id){
-  if(state.level!==id){
+  if(state.level!==id || state.itemIdx===null){
     cancelAB(); cancelFeedback();
-    Object.assign(state,{ level:id, comprehension:null, ab:null, abError:null, method:null, methodFirst:null, methodChanges:[], pendingMethod:null,
+    const lv = dir().levels.find(l=>l.id===id);
+    Object.assign(state,{ level:id, itemIdx: nextItem(state.direction, id, (lv.items||[]).length || 1), comprehension:null, ab:null, abError:null, method:null, methodFirst:null, methodChanges:[], pendingMethod:null,
       draft:"", firstSubmission:"", decision:null, reviseDraft:"", final:"" });
   }
   // 原文を読んでいる間に訳案を用意しておく（表示はSTEP 4から）。同じ文章にもどった場合は作り直さない
@@ -845,18 +1101,49 @@ function decide(d){
   if(d==="keep"){ state.final=state.firstSubmission; finish(); }
   else { if(!state.reviseDraft) state.reviseDraft=state.firstSubmission; go("revise"); }
 }
-function finish(){
-  saveRecord(state.consent ? buildRecord() : null).catch(()=>{});
+function finish(){ go("self"); }
+function submitSelf(){
+  if(!state.selfTouched) return;
+  if(state.consent===true) saveRecord(buildRecord());   // 同意した来場者の記録だけを送る
   go("report");
+}
+function newId(){
+  try{ if(crypto && crypto.randomUUID) return crypto.randomUUID(); }catch(e){}
+  return "t" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,10) + Math.random().toString(36).slice(2,10);
 }
 function reset(){
   cancelAB(); cancelFeedback();
   state = freshState();
   go("intro");
 }
+// スプレッドシートに送る1行分の記録（名前など個人を特定できる情報は含めない）
 function buildRecord(){
-  return { at:new Date().toISOString(), level:state.level, comprehension:state.comprehension, methodFirst:state.methodFirst, methodChanges:state.methodChanges,
-    direction:state.direction, abSource:state.ab&&state.ab.source, fbSource:state.fb&&state.fb.source, firstSubmission:state.firstSubmission, decision:state.decision, final:state.final, minMatch:matchK(), matchUnit:dir().targetMode };
+  const l = lvl(), R = buildReport(), now = new Date();
+  const fb = state.fb && !state.fb.trial ? state.fb : null;
+  const num = v => R.an.ok ? v : "";
+  return {
+    id: state.sessionId || newId(),
+    startedAt: state.startedAt || "",
+    finishedAt: now.toISOString(),
+    durationSec: state.startedAt ? Math.round((now - new Date(state.startedAt))/1000) : "",
+    direction: dir().label,
+    level: `${l.label}　${l.name}`,
+    source: l.source,
+    comprehension: R.comp,
+    methodFirst: CONFIG.methods[state.methodFirst] || "",
+    methodChanges: state.methodChanges.map(m=>CONFIG.methods[m]).join(" → "),
+    firstSubmission: state.firstSubmission,
+    afterFeedback: R.revised,
+    final: state.final,
+    selfScore: state.selfScore,
+    commonPct: num(R.commonPct), otherPct: num(R.otherPct),
+    pctA: num(R.perPct.a), pctB: num(R.perPct.b), pctC: num(R.perPct.c),
+    combined: R.combined===null ? "" : R.combined,
+    matchRule: R.ruleShort,
+    transA: (state.ab && state.ab.a) || "", transB: (state.ab && state.ab.b) || "", transC: (state.fb && state.fb.c) || "",
+    fbGood: fb ? fb.good : "", fbGap: fb ? fb.gap : "", fbNatural: fb ? fb.natural : "",
+    aiMode: state.ab && state.ab.source==="ai" ? "AI" : "試用モード（用意した例文）"
+  };
 }
 
 /* ---- report helpers ---- */
@@ -874,13 +1161,14 @@ function buildReport(){
     ? `大文字・小文字と句読点を区別せず、訳A・B・Cのいずれかと連続して${an.k}語以上一致する部分を、語数で数えた参考値です。`
     : `空白・改行・句読点を除き、訳A・B・Cのいずれかと連続して${an.k}文字以上一致する部分を数えた参考値です。`;
   const ruleShort = word ? `連続${an.k}語以上の一致（語数で計算）` : `空白・句読点を除き連続${an.k}文字以上の一致`;
+  const combinedOf = other => Math.round((state.selfScore*CONFIG.selfWeight + other*(1-CONFIG.selfWeight))*10)/10;
   let commonPct=0, otherPct=0, perPct={a:0,b:0,c:0};
   if(an.ok){ commonPct=pct(an.common,an.len); otherPct=Math.round((100-commonPct)*10)/10; for(const k of ["a","b","c"]) perPct[k]=pct(an.per[k],an.len); }
   const d=new Date(); const dateStr=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;
-  return { comp, method, revised, an, commonPct, otherPct, perPct, dateStr, unit, ruleText, ruleShort };
+  const combined = an.ok ? combinedOf(otherPct) : null;
+  return { comp, method, revised, an, commonPct, otherPct, perPct, dateStr, unit, ruleText, ruleShort, combined };
 }
 const HL = { a:"var(--hl-a)", b:"var(--hl-b)", c:"var(--hl-c)" };
-const HLHEX = { a:"#f8df76", b:"#bcd5f4", c:"#c5e6d4" };
 function markStyle(keys, palette){
   if(keys.length===1) return `background:${palette[keys[0]]}`;
   return `background:repeating-linear-gradient(135deg,${keys.map((k,i)=>`${palette[k]} ${i*6}px ${(i+1)*6}px`).join(",")})`;
@@ -904,77 +1192,6 @@ function highlightHTML(an, filter, palette=HL){
   return out;
 }
 
-/* ---- printable A6 card ---- */
-function buildCardHTML(){
-  const l=lvl(); const R=buildReport();
-  const hl = R.an.ok ? highlightHTML(R.an,"all",HLHEX) : esc(state.final);
-  const meter = R.an.ok
-    ? `<div class="m"><div><b>${R.commonPct}%</b>AI案と共通する表現</div><div><b>${R.otherPct}%</b>共通しない表現</div></div>
-       <p class="sm">内訳（重複あり）：訳A ${R.perPct.a}%／訳B ${R.perPct.b}%／訳C ${R.perPct.c}%　判定：${esc(R.ruleShort)}</p>`
-    : `<p class="sm">最終翻訳から比べられる${R.unit}がないため、割合を算出できません。</p>`;
-  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>翻訳カード</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@700&family=Zen+Kaku+Gothic+New:wght@400;700&family=Klee+One:wght@600&display=swap">
-<style>
-@page{size:105mm 148mm;margin:0}
-*{box-sizing:border-box}html,body{margin:0;background:#fff;color:#1d2a45}
-body{font-family:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.card{width:105mm;height:148mm;padding:7mm 7mm 6mm 10mm;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:1.6mm;border-left:3mm solid #2c5aa0;background:linear-gradient(160deg,#fffdf5 0%,#fdf3c6 45%,#dfe9f7 100%)}
-.card::after{content:"";position:absolute;right:6mm;top:0;width:4mm;height:9mm;background:#f2c94c;clip-path:polygon(0 0,100% 0,100% 100%,50% 75%,0 100%)}
-h1{font-family:"Zen Old Mincho",serif;font-size:1.25em;margin:0;line-height:1.35;padding-right:8mm}
-.lab{font-size:.68em;letter-spacing:.12em;color:#77849f}
-.r{display:grid;grid-template-columns:22mm 1fr;gap:2mm;border-bottom:.2mm solid #c4d1e6;padding:1mm 0}
-.r span{font-size:.72em;color:#77849f}.r div{white-space:pre-wrap;word-break:break-word}
-.hand{font-family:"Klee One",sans-serif}.en{font-family:"Zen Old Mincho",Georgia,serif}
-.m{display:flex;gap:2mm}.m div{flex:1;border:.2mm solid #c4d1e6;background:#fff;padding:1mm 2mm;font-size:.72em}
-.m b{display:block;font-family:"Zen Old Mincho",serif;font-size:1.9em;line-height:1.1}
-.sm{font-size:.66em;color:#44557a;margin:0;line-height:1.5}
-.q{font-family:"Zen Old Mincho",serif;font-size:.95em;margin-top:auto;border-top:.3mm solid #2c5aa0;padding-top:1.5mm}
-mark{color:inherit}
-@media screen{body{display:flex;justify-content:center;padding:20px;background:#c9d7ec}.card{box-shadow:0 6px 20px rgba(0,0,0,.25)}}
-</style></head><body><div class="card" id="card" style="font-size:9pt">
-<div class="lab">TRANSLATION LAB ・ ${esc(R.dateStr)}</div>
-<h1>${esc(CONFIG.workTitle)}</h1>
-<div class="r"><span>翻訳の方向</span><div>${esc(dir().label)}</div></div>
-<div class="r"><span>難易度</span><div>${esc(l.label)} ${esc(l.name)}</div></div>
-<div class="r"><span>原文</span><div class="en">${esc(l.source)}</div></div>
-<div class="r"><span>見る前の理解度</span><div>${esc(R.comp)}</div></div>
-<div class="r"><span>最初の方法</span><div>${esc(R.method)}</div></div>
-<div class="r"><span>最初の翻訳</span><div class="hand">${esc(state.firstSubmission)}</div></div>
-<div class="r"><span>コメントの後</span><div>${esc(R.revised)}</div></div>
-<div class="r"><span>最終的な翻訳</span><div class="hand">${hl}</div></div>
-${meter}
-<p class="sm">${esc(CONFIG.matchNote)}</p>
-<p class="q">${esc(CONFIG.question)}</p>
-</div>
-<script>
-(function(){var c=document.getElementById('card'),s=9;function fit(){while(c.scrollHeight>c.clientHeight+1&&s>5.5){s-=.25;c.style.fontSize=s+'pt';}}
-(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){fit();setTimeout(function(){window.print();},300);});})();
-<\/script></body></html>`;
-}
-async function printCard(){
-  const msg = t => { state.printMsg=t; const el=$("#printMsg"); if(el) el.textContent=t; };
-  if(!inClaude){ // 独立版：その場で印刷画面を開く
-    const old = document.getElementById("printFrame"); if(old) old.remove();
-    const f = document.createElement("iframe");
-    f.id = "printFrame"; f.title = "印刷用カード"; f.setAttribute("aria-hidden","true");
-    f.style.cssText = "position:fixed;left:-10000px;top:0;width:105mm;height:148mm;border:0";
-    f.srcdoc = buildCardHTML();
-    document.body.appendChild(f);
-    msg("印刷画面を開いています…（A6・105×148mm）");
-    setTimeout(()=>msg("印刷画面が出ない場合は、もう一度ボタンを押してください。"), 4000);
-    return;
-  }
-  const dl = await downloadsPromise;
-  if(!dl){ msg("この画面からは印刷用ファイルを保存できません。スタッフにお声がけください。"); return; }
-  msg("印刷用カード（A6）のファイルを保存します。確認の画面で「保存」を選んでください。");
-  try{
-    await dl.save({ filename:`translation-card-${Date.now()}.html`, data:buildCardHTML() });
-    msg("保存しました。保存したファイルを開くと、A6サイズの印刷画面が表示されます。");
-  }catch(e){
-    msg(e&&e.code==="declined" ? "保存を取りやめました。" : "印刷用ファイルを保存できませんでした。もう一度お試しください。");
-  }
-}
-
 /* ---- keyboard ---- */
 document.addEventListener("keydown",e=>{
   if(e.ctrlKey&&e.altKey&&(e.key==="s"||e.key==="S"||e.code==="KeyS")){ e.preventDefault(); toggleStaff(); return; }
@@ -982,7 +1199,7 @@ document.addEventListener("keydown",e=>{
   if(e.key==="Escape" && !e.isComposing){
     const sp=$("#staff"); if(!sp.hidden){ sp.hidden=true; return; }
     if(state.pendingMethod){ state.pendingMethod=null; render(); return; }
-    if(tag!=="TEXTAREA" && tag!=="INPUT"){ e.preventDefault(); goBack(); }
+    if(tag!=="TEXTAREA" && (tag!=="INPUT" || e.target.type==="range")){ e.preventDefault(); goBack(); }
     return;
   }
   if(tag==="TEXTAREA"||tag==="INPUT"||e.isComposing||e.ctrlKey||e.metaKey||e.altKey) return;
@@ -1001,9 +1218,12 @@ function toggleStaff(){
     <label>英語訳：一致とみなす最小語数 <input type="number" id="sMinW" min="1" max="10" value="${CONFIG.minMatchWords}"></label>
     <label><input type="checkbox" id="sTrial" ${CONFIG.forceTrial?"checked":""}> 常に試用モードにする</label>
     <span class="hint">このブラウザにだけ保存されます。試用モードの切り替えはページの再読み込み後に反映されます。</span>
+    <div><b>体験記録</b><br><span id="sPending">${esc(pendingText())}</span></div>
+    <div class="row"><button class="ghost" id="sFlush">未送信の記録を今すぐ送る</button></div>
     <div class="row"><button class="ghost" id="sSave">保存して閉じる</button></div>`;
   p.hidden=false;
   $("#sSave").onclick=()=>{ const v=parseInt($("#sMin").value,10); if(v>=1&&v<=20) CONFIG.minMatchLength=v; const vw=parseInt($("#sMinW").value,10); if(vw>=1&&vw<=10) CONFIG.minMatchWords=vw; CONFIG.forceTrial=$("#sTrial").checked; saveStaff(); if(CONFIG.forceTrial){aiMode="trial";paintMode();} p.hidden=true; if(state.view==="report") render(); };
+  $("#sFlush").onclick=()=>{ $("#sPending").textContent="送信しています…"; flushPending(); };
   $("#sMin").focus();
 }
 
