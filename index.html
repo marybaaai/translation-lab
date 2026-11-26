@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Translation Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Klee+One:wght@400;600&display=swap">
+<style>
+/* Layout: 黄色から青へのグラデーションの机に、開いたノート1冊。上辺にインデックスタブ（進行）、左上に「もどる」タブ、選択肢は付箋・本・カード、主ボタンはしおり。
+   Colour: 黄（付箋・蛍光ペン・しおりの飾り）と青（ノートの罫線・インク・表紙・しおり）。 */
+:root{
+  color-scheme: light;
+  --desk-top:#fcefb4; --desk-mid:#d8e4f4; --desk-low:#9dbae2;
+  --paper:#fffdf5; --paper-2:#f6f3e4; --rule:#d3e0f2; --margin-line:#ebcb63;
+  --ink:#1d2a45; --ink-2:#44557a; --ink-3:#77849f; --edge:#c4d1e6;
+  --note-1:#fbe683; --note-2:#d9e6f7; --note-3:#fdf0ae; --tape:rgba(255,255,255,.6);
+  --ribbon:#2c5aa0; --ribbon-dark:#1f4580; --ribbon-ink:#fff8d6;
+  --cover-1:#4a74b8; --cover-2:#36609f; --cover-3:#22457a; --gold:#f2c94c; --page-edge:#fffdf5;
+  --hl-a:#f8df76; --hl-b:#bcd5f4; --hl-c:#c5e6d4;
+  --focus:#1d2a45; --warn-bg:#fff4cc; --warn-ink:#6b4a00; --warn-edge:#e8cf73;
+  --f-display:"Zen Old Mincho","Hiragino Mincho ProN","Yu Mincho",serif;
+  --f-body:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic","Meiryo",sans-serif;
+  --f-hand:"Klee One","Zen Kaku Gothic New","Yu Gothic",sans-serif;
+  --f-en:"Zen Old Mincho",Georgia,serif;
+  --s-xs:14px; --s-sm:16px; --s-md:19px; --s-lg:23px; --s-xl:30px; --s-xxl:42px;
+  --line:1.9;
+}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+img{max-width:100%}
+html{height:100%}
+body{
+  margin:0; min-height:100%; background:linear-gradient(160deg,var(--desk-top) 0%,var(--desk-mid) 55%,var(--desk-low) 100%) fixed;
+  color:var(--ink); font-family:var(--f-body); font-size:var(--s-md); line-height:1.7;
+  padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:20px 48px;
+}
+*{box-sizing:border-box}
+button,textarea,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;text-wrap:balance;margin:0;line-height:1.4}
+p{margin:0}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+
+/* ---- header ---- */
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:12px}
+.brand b{font-family:var(--f-display);font-size:var(--s-lg);letter-spacing:.04em}
+.brand span{color:var(--ink-2);font-size:var(--s-sm)}
+.mode{font-size:var(--s-xs);padding:6px 12px;border-radius:3px;background:var(--paper);border:1px solid var(--edge);color:var(--ink-2);display:flex;gap:8px;align-items:center}
+.mode::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ink-3)}
+.mode.ai::before{background:#4c7a5a}
+.mode.trial{background:var(--warn-bg);color:var(--warn-ink);border-color:var(--warn-edge)}
+.mode.trial::before{background:#d19a00}
+.trialbar{background:var(--warn-bg);color:var(--warn-ink);border:1px solid var(--warn-edge);border-radius:3px;padding:10px 16px;font-size:var(--s-sm)}
+
+/* ---- progress: index tabs ---- */
+.tabs{display:flex;gap:4px;padding-left:28px;overflow-x:auto;margin-bottom:-14px;position:relative;z-index:1}
+.tab{flex:0 0 auto;padding:8px 18px 18px;border-radius:8px 8px 0 0;background:var(--note-2);color:var(--ink-3);font-size:var(--s-xs);border:1px solid var(--edge);border-bottom:none;display:flex;gap:8px;align-items:baseline;transform:translateY(6px)}
+.tab i{font-style:normal;font-family:var(--f-display);font-size:var(--s-sm)}
+.tab.done{color:var(--ink-2);background:var(--note-3)}
+.tab.now{background:var(--paper);color:var(--ink);transform:none;font-weight:700}
+
+/* ---- the notebook ---- */
+.book{position:relative;background:var(--paper);border-radius:4px 10px 10px 4px;box-shadow:0 1px 0 var(--edge),0 18px 40px -18px rgba(30,32,36,.45),inset 22px 0 26px -22px rgba(0,0,0,.28);padding:44px 48px 44px 64px;min-height:560px}
+.book::before{content:"";position:absolute;left:38px;top:0;bottom:0;width:1px;background:var(--margin-line)}
+.book::after{content:"";position:absolute;right:-6px;top:8px;bottom:8px;width:6px;border-radius:0 6px 6px 0;background:repeating-linear-gradient(180deg,var(--paper-2) 0 2px,var(--edge) 2px 3px)}
+.stage{display:flex;flex-direction:column;gap:28px}
+.stage h2{font-size:var(--s-xl)}
+.lead{color:var(--ink-2);max-width:42em}
+.eyebrow{font-size:var(--s-xs);letter-spacing:.12em;color:var(--ink-3)}
+
+/* ---- buttons ---- */
+.row{display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.bookmark{appearance:none;border:none;cursor:pointer;background:var(--ribbon);color:var(--ribbon-ink);font-weight:700;font-size:var(--s-md);min-height:60px;padding:14px 56px 14px 30px;clip-path:polygon(0 0,100% 0,calc(100% - 22px) 50%,100% 100%,0 100%);transition:background .15s, transform .15s;letter-spacing:.04em}
+.bookmark:hover{background:var(--ribbon-dark)}
+.bookmark:active{transform:translateY(1px)}
+.bookmark:focus-visible{outline:none;box-shadow:0 0 0 3px var(--paper),0 0 0 6px var(--focus)}
+.bookmark:disabled{background:var(--ink-3);cursor:not-allowed;opacity:.7}
+.ghost{appearance:none;cursor:pointer;background:transparent;border:1.5px solid var(--ink-2);border-radius:3px;min-height:52px;padding:10px 22px;font-size:var(--s-sm);font-weight:500}
+.ghost:hover{background:var(--paper-2)}
+.ghost:disabled{opacity:.5;cursor:not-allowed}
+.hint{font-size:var(--s-xs);color:var(--ink-3)}
+.back{appearance:none;cursor:pointer;align-self:flex-start;display:inline-flex;align-items:center;gap:10px;min-height:46px;padding:8px 22px 8px 14px;margin-bottom:-8px;border:1.5px solid var(--edge);border-radius:3px 24px 24px 3px;background:var(--note-2);color:var(--ink);font-size:var(--s-sm);font-weight:500;transition:background .15s, transform .15s}
+.back::before{content:"";width:9px;height:9px;border-left:2.5px solid var(--ribbon);border-bottom:2.5px solid var(--ribbon);transform:rotate(45deg);margin-left:4px}
+.back:hover{background:var(--note-3);transform:translateX(-2px)}
+.kbd{font-family:var(--f-body);font-size:12px;border:1px solid var(--edge);border-bottom-width:2px;border-radius:3px;padding:0 6px;background:var(--paper);color:var(--ink-2)}
+.err{color:var(--warn-ink);font-size:var(--s-sm)}
+
+/* ---- sticky notes ---- */
+.notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+.note{position:relative;appearance:none;cursor:pointer;text-align:left;border:none;background:var(--note-1);min-height:150px;padding:30px 22px 20px;box-shadow:0 10px 14px -12px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:8px;transition:transform .15s, box-shadow .15s}
+.note:nth-child(1){transform:rotate(-1.2deg)} .note:nth-child(2){transform:rotate(.8deg);background:var(--note-2)} .note:nth-child(3){transform:rotate(-.5deg);background:var(--note-3)}
+.note::before{content:"";position:absolute;top:-10px;left:50%;width:76px;height:22px;margin-left:-38px;background:var(--tape);box-shadow:0 1px 2px rgba(0,0,0,.12);transform:rotate(-2deg)}
+.note:hover{transform:rotate(0) translateY(-3px);box-shadow:0 16px 18px -12px rgba(0,0,0,.5)}
+.note .k{font-size:var(--s-xs);color:var(--ink-3)}
+.note .t{font-family:var(--f-hand);font-size:var(--s-lg);font-weight:600}
+.note .d{font-size:var(--s-sm);color:var(--ink-2)}
+.note[aria-pressed="true"]{outline:3px solid var(--ink);outline-offset:4px;transform:rotate(0)}
+.note[aria-pressed="true"]::after{content:"✓";position:absolute;right:14px;top:10px;font-family:var(--f-hand);font-size:28px;color:var(--ribbon)}
+
+/* ---- book covers (level) ---- */
+.shelf{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:28px;align-items:end;padding-bottom:16px;border-bottom:10px solid var(--edge);border-radius:0 0 3px 3px}
+.vol{appearance:none;cursor:pointer;border:none;position:relative;text-align:left;background:var(--cover-2);color:var(--ribbon-ink);min-height:230px;padding:26px 24px 22px 34px;border-radius:2px 6px 6px 2px;box-shadow:0 12px 18px -14px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:10px;transition:transform .15s}
+.vol::before{content:"";position:absolute;left:0;top:0;bottom:0;width:14px;background:rgba(0,0,0,.22)}
+.vol::after{content:"";position:absolute;right:-1px;bottom:-1px;top:6px;width:var(--pages);background:repeating-linear-gradient(180deg,var(--page-edge) 0 2px,var(--edge) 2px 3px);border-radius:0 4px 4px 0;transform:translateX(100%)}
+.vol:nth-child(1){--pages:5px;background:var(--cover-1)} .vol:nth-child(2){--pages:10px;background:var(--cover-2)} .vol:nth-child(3){--pages:16px;background:var(--cover-3)}
+.vol:hover{transform:translateY(-6px)}
+.vol .lv{font-family:var(--f-display);font-size:var(--s-sm);letter-spacing:.14em;opacity:.85}
+.vol .nm{font-family:var(--f-display);font-size:var(--s-xl)}
+.vol .ds{font-size:var(--s-sm);opacity:.85;margin-top:auto}
+.vol .label{position:absolute;top:0;right:22px;width:22px;height:46px;background:var(--gold);clip-path:polygon(0 0,100% 0,100% 100%,50% 78%,0 100%)}
+
+/* ---- text cards ---- */
+.source{font-family:var(--f-en);font-size:var(--s-lg);line-height:1.75;white-space:pre-wrap;padding:22px 26px;background:var(--paper-2);border-left:4px solid var(--ribbon);max-width:46em}
+.source.small{font-size:var(--s-md);padding:16px 20px}
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+.card{position:relative;background:#fff;border:1px solid var(--edge);border-radius:3px;padding:30px 22px 18px;background-image:linear-gradient(transparent 37px,var(--rule) 37px,var(--rule) 38px);background-size:100% 38px;background-position:0 22px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.card .tag{position:absolute;top:-1px;left:18px;transform:translateY(-100%);background:var(--note-2);border:1px solid var(--edge);border-bottom:none;border-radius:5px 5px 0 0;padding:2px 14px;font-size:var(--s-xs);font-weight:700;letter-spacing:.08em}
+.card .body{font-size:var(--s-md);line-height:38px;white-space:pre-wrap;word-break:break-word}
+.card .src{font-size:12px;color:var(--ink-3);margin-top:auto;padding-top:6px}
+.card.c .tag{background:var(--note-3)}
+
+/* ---- method picker ---- */
+.picker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.pick{appearance:none;cursor:pointer;border:1.5px solid var(--edge);background:var(--paper);border-radius:3px;min-height:84px;padding:14px 18px;display:flex;align-items:center;gap:14px;text-align:left;font-size:var(--s-md);font-weight:500}
+.pick svg{flex:0 0 auto}
+.pick:hover{border-color:var(--ink-2)}
+.pick[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--ink);background:#fff}
+.pick small{display:block;font-size:var(--s-xs);color:var(--ink-3);font-weight:400}
+
+/* ---- notebook editor ---- */
+.editor{display:flex;flex-direction:column;gap:10px}
+.editor label{font-weight:700;font-size:var(--s-sm)}
+textarea.ruled{width:100%;min-height:228px;resize:vertical;border:1px solid var(--edge);border-radius:3px;padding:6px 18px 6px 52px;font-family:var(--f-hand);font-size:22px;line-height:38px;background-color:#fff;background-image:linear-gradient(90deg,transparent 38px,var(--margin-line) 38px,var(--margin-line) 39px,transparent 39px),linear-gradient(transparent 37px,var(--rule) 37px,var(--rule) 38px);background-size:100% 100%,100% 38px;background-attachment:local;background-position:0 0,0 6px}
+.cols{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:34px;align-items:start}
+.cols.even{grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin-top:10px}
+.wide{display:flex;flex-direction:column;gap:32px;min-width:0}
+.wide.work{gap:20px}
+.wide .source{max-width:none}
+.cards.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.shelf.dirs{grid-template-columns:repeat(2,minmax(0,1fr))}
+.vol[aria-pressed="true"]{outline:3px solid var(--gold);outline-offset:5px}
+.refs{display:flex;flex-direction:column;gap:30px;min-width:0}
+.confirm{background:var(--paper-2);border:1px dashed var(--ink-3);padding:14px 18px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+
+/* ---- feedback (margin notes) ---- */
+.mine{font-family:var(--f-hand);font-size:22px;line-height:1.8;white-space:pre-wrap;padding:14px 20px;background:#fff;border:1px solid var(--edge)}
+.fb{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.fb > div{background:var(--note-3);padding:18px 18px 16px;border-top:3px solid var(--ribbon);min-width:0}
+.fb h3{font-family:var(--f-body);font-size:var(--s-sm);margin-bottom:6px}
+.fb p{font-family:var(--f-hand);font-size:var(--s-md);line-height:1.75}
+.genmark{font-size:12px;color:var(--ink-3)}
+
+/* ---- loading ---- */
+.loading{display:flex;align-items:center;gap:16px;padding:22px;background:var(--paper-2);border-radius:3px;color:var(--ink-2)}
+.scribble{width:120px;height:28px;flex:0 0 auto}
+.scribble path{stroke:var(--ink-2);stroke-width:2;fill:none;stroke-dasharray:180;stroke-dashoffset:180;animation:draw 1.8s ease-in-out infinite}
+@keyframes draw{to{stroke-dashoffset:0}}
+.errbox{background:var(--warn-bg);border:1px solid var(--warn-edge);padding:16px 20px;display:flex;flex-direction:column;gap:12px;color:var(--warn-ink)}
+
+/* ---- report: library card ---- */
+.report{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:30px;align-items:start}
+.lcard{background:#fff;border:1px solid var(--edge);padding:26px 28px;display:flex;flex-direction:column;gap:0;min-width:0}
+.lcard h3{font-size:var(--s-lg);padding-bottom:12px;border-bottom:2px solid var(--ink)}
+.li{display:grid;grid-template-columns:9.5em minmax(0,1fr);gap:14px;padding:12px 0;border-bottom:1px solid var(--rule)}
+.li dt{font-size:var(--s-xs);color:var(--ink-3);letter-spacing:.04em;padding-top:3px}
+.li dd{margin:0;min-width:0;white-space:pre-wrap;word-break:break-word}
+.li dd.hand{font-family:var(--f-hand);font-size:20px}
+.li dd.en{font-family:var(--f-en)}
+.stamp{display:inline-block;border:2px solid var(--ribbon);color:var(--ribbon);padding:1px 10px;font-size:var(--s-sm);font-weight:700;transform:rotate(-3deg);border-radius:3px}
+.meter{background:var(--paper-2);padding:22px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.big{display:flex;gap:14px;flex-wrap:wrap}
+.big div{flex:1 1 130px;background:#fff;border:1px solid var(--edge);padding:12px 14px}
+.big b{display:block;font-family:var(--f-display);font-size:var(--s-xxl);line-height:1.1;font-variant-numeric:tabular-nums}
+.big span{font-size:var(--s-xs);color:var(--ink-2)}
+.bar{display:flex;height:16px;border-radius:2px;overflow:hidden;background:#fff;border:1px solid var(--edge)}
+.bar i{display:block;background:repeating-linear-gradient(135deg,var(--ribbon) 0 3px,var(--cover-1) 3px 6px)}
+.breakdown{display:flex;flex-direction:column;gap:6px;font-size:var(--s-sm)}
+.breakdown div{display:flex;justify-content:space-between;gap:10px;font-variant-numeric:tabular-nums}
+.sw{display:inline-block;width:14px;height:14px;margin-right:8px;vertical-align:-2px;border:1px solid rgba(0,0,0,.15)}
+.filters{display:flex;gap:8px;flex-wrap:wrap}
+.chip{appearance:none;cursor:pointer;border:1px solid var(--edge);background:#fff;border-radius:3px;padding:6px 12px;font-size:var(--s-xs);min-height:36px}
+.chip[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.hltext{font-family:var(--f-hand);font-size:22px;line-height:2.05;white-space:pre-wrap;word-break:break-word;background:#fff;padding:14px 18px;border:1px solid var(--edge)}
+mark{background:none;color:inherit;padding:2px 0;border-bottom:2px solid transparent}
+mark.dim{background:none!important;border-bottom-color:transparent!important}
+.note-small{font-size:var(--s-xs);color:var(--ink-2);line-height:1.7}
+.question{font-family:var(--f-display);font-size:var(--s-xl);text-align:center;padding:30px 10px 6px;border-top:1px solid var(--rule)}
+.hero{min-height:480px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:26px}
+.hero h1{font-size:clamp(30px,5vw,var(--s-xxl))}
+.hero p{color:var(--ink-2);font-size:var(--s-lg);font-family:var(--f-hand)}
+.consent{max-width:40em;display:flex;flex-direction:column;gap:18px}
+.consent .box{background:var(--paper-2);padding:20px 24px;border-left:4px solid var(--ink-3);display:flex;flex-direction:column;gap:10px}
+
+/* ---- staff panel ---- */
+.staff{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));background:#fff;border:1px solid var(--ink-2);padding:18px 20px;z-index:20;width:min(360px,calc(100vw - 32px));display:flex;flex-direction:column;gap:12px;font-size:var(--s-sm);box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.staff input[type=number]{width:5em;padding:4px 8px;border:1px solid var(--edge)}
+
+@media (max-width:860px){
+  .book{padding:34px 20px 34px 40px}
+  .book::before{left:24px}
+  .notes,.shelf,.picker,.fb,.cards,.cols,.report,.shelf.dirs,.cards.three,.cols.even{grid-template-columns:minmax(0,1fr)}
+  .li{grid-template-columns:minmax(0,1fr);gap:2px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.scribble path{stroke-dashoffset:0}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><b>Translation Lab</b><span>翻訳選択実験</span></div>
+    <div id="mode" class="mode" role="status">AI接続を確認中…</div>
+  </header>
+  <div id="trialbar" class="trialbar" hidden>試用モード：AIに接続していません。表示される訳案は、あらかじめ用意した例文です。あなたの入力に合わせて作られたものではありません。</div>
+  <nav class="tabs" id="tabs" aria-label="体験の進行状況"></nav>
+  <main class="book"><div class="stage" id="stage" aria-live="polite"></div></main>
+</div>
+<div class="staff" id="staff" hidden></div>
+<script src="prompts.js"></script>
+<script>
+/* =====================================================================
+   設定と教材 — ここを書き換えれば、文章・判定基準・文言を差し替えられます
+   ===================================================================== */
+const CONFIG = {
+  // 一致判定の最小単位。訳文が日本語なら「文字」、英語なら「語」で数えます
+  minMatchLength: 4,      // 日本語訳：空白・改行・句読点を除いて、連続して何文字一致したら「共通」とみなすか
+  minMatchWords: 3,       // 英語訳：大文字・小文字と句読点を区別せず、連続して何語一致したら「共通」とみなすか
+
+  // AI生成の設定（claude.ai の機能を使用）
+  ai: {
+    modelTier: "default",   // "quick"（速い）/ "default" / "complex"
+    effort: "low",          // 考える量：low / medium / high
+    cacheAB: true,          // 同じ原文の訳A・Bを5分間再利用する（待ち時間・使用量の節約。claude.ai 版のみ）
+    endpoint: "/api/generate" // 独立版（Vercel）で使うAI接続先。claude.ai 版では使わない
+  },
+  forceTrial: false,        // true にすると常に試用モード
+
+  // 体験記録（【未確定】現在は保存しない。保存先が決まったら saveRecord() を実装）
+  recording: {
+    enabled: false,
+    consentTitle: "体験の記録について",
+    consentBody: [
+      "この体験では、あなたが選んだ選択肢と書いた翻訳を、名前など個人を特定できる情報を含まない形で記録し、作品の研究・振り返りに使わせていただく予定です。",
+      "同意しない場合も、体験はすべて同じようにお楽しみいただけます。"
+    ],
+    disabledNote: "※ 試作版のため、現在は記録の保存を行っていません。"
+  },
+
+  // 翻訳の方向と教材（仮）。どの原文も3文以内にすること。
+  // targetMode：訳文の一致を数える単位（"char"＝文字、"word"＝語）
+  // kind: "sentence" | "poem"。trial は試用モードで使う、あらかじめ用意した例文
+  directions: [
+    { id: "ja-en", label: "日本語 → 英語", from: "日本語", to: "英語", targetMode: "word",
+      desc: "日本語の文章を読んで、英語に訳します。",
+      levels: [
+        { id: 1, label: "Level 1", name: "短い文章", desc: "一文だけの、短い日本語の文です。", kind: "sentence",
+          source: "窓を開けると、金木犀の香りがした。",
+          trial: {
+            a: "When I opened the window, there was the scent of fragrant olive.",
+            b: "I opened the window and caught the scent of osmanthus.",
+            c: "Opening the window, I was met by the sweet smell of osmanthus."
+          } },
+        { id: 2, label: "Level 2", name: "少し長い文章", desc: "二文ほどの、情景のある日本語の文章です。", kind: "sentence",
+          source: "久しぶりに実家に帰ると、母は何も聞かずにお茶を淹れてくれた。台所の時計は、相変わらず五分進んでいた。",
+          trial: {
+            a: "When I returned to my parents' home for the first time in a long while, my mother made tea for me without asking anything. The clock in the kitchen was, as always, five minutes fast.",
+            b: "When I went home after a long time away, my mother made me tea without asking a single question. The kitchen clock was still five minutes fast.",
+            c: "Home again after so long, I found my mother quietly making tea, asking nothing. The kitchen clock still ran five minutes ahead."
+          } },
+        { id: 3, label: "Level 3", name: "詩・俳句", desc: "日本語の俳句です。解釈はひとつではありません。", kind: "poem",
+          source: "読みさしの\n頁に眠る\n栞かな",
+          trial: {
+            a: "a bookmark\nsleeping in the page\nleft half-read",
+            b: "the bookmark\nstill asleep on the page\nwhere reading stopped",
+            c: "half-read —\na bookmark dozing\nbetween the pages"
+          } }
+      ] },
+    { id: "en-ja", label: "英語 → 日本語", from: "英語", to: "日本語", targetMode: "char",
+      desc: "英語の文章を読んで、日本語に訳します。",
+      levels: [
+        { id: 1, label: "Level 1", name: "短い文章", desc: "一文だけの、短い英文です。", kind: "sentence",
+          source: "The rain stopped just as I reached the station.",
+          trial: {
+            a: "私が駅に着いたちょうどその時、雨が止んだ。",
+            b: "駅に着いたとたん、雨がやんだ。",
+            c: "駅に着いたころには、ちょうど雨が上がっていた。"
+          } },
+        { id: 2, label: "Level 2", name: "少し長い文章", desc: "二文ほどの、情景のある英文です。", kind: "sentence",
+          source: "My grandmother kept every letter she ever received in a tin box under her bed. When she died, we found them tied with ribbons of different colors, and it took us a whole winter to understand what each color meant.",
+          trial: {
+            a: "私の祖母は、これまでに受け取ったすべての手紙を、ベッドの下のブリキの箱にしまっていた。彼女が亡くなったとき、私たちはそれらが異なる色のリボンで結ばれているのを見つけ、それぞれの色が何を意味するのかを理解するのにまる一冬かかった。",
+            b: "祖母は、もらった手紙を一通残らず、ベッドの下の缶にしまっていた。祖母が亡くなったあと、手紙が色とりどりのリボンで束ねられているのが見つかった。それぞれの色に込められた意味がわかるまで、私たちはひと冬を費やした。",
+            c: "届いた手紙を、祖母はすべてベッドの下のブリキ缶に大切にしまっていた。亡くなってから見つかったその束は、色ちがいのリボンで結わえられていて、色ごとの意味を家族で読み解くのに、ひと冬まるごとかかった。"
+          } },
+        { id: 3, label: "Level 3", name: "詩・俳句", desc: "短い英語の俳句です。解釈はひとつではありません。", kind: "poem",
+          source: "an old bookmark\nstill holding the page\nwhere you stopped reading",
+          trial: {
+            a: "古いしおり\nまだそのページを押さえている\nあなたが読むのをやめたところ",
+            b: "古いしおり\nいまも挟まる\nきみが閉じたページ",
+            c: "古しおり\n君の読みさしを\nなお守る"
+          } }
+      ] }
+  ],
+
+  comprehension: [
+    { id: "can",   t: "自分で訳せそう",     d: "だいたいの意味がつかめた" },
+    { id: "maybe", t: "少し迷う",           d: "わかるところと、迷うところがある" },
+    { id: "no",    t: "まったく分からない", d: "どう訳せばいいか見当がつかない" }
+  ],
+  methods: { a: "訳Aを修正する", b: "訳Bを修正する", own: "どちらも使わず、自分で翻訳を書く" },
+
+  // 試用モードのフィードバック（生成ではなく、見直しの観点として示す）
+  trialFeedback: {
+    lead: "試用モードのため、あなたの訳に合わせたフィードバックは作成されていません。かわりに、次の3つの観点で、ご自身の訳を読み返してみてください。",
+    good: "自分の訳の中で、気に入っている言葉はどれですか？",
+    gap: "原文にあって訳にない意味、訳にあって原文にない意味はありますか？",
+    natural: "声に出して読んだとき、引っかかるところはありますか？"
+  },
+
+  workTitle: "それ、本当にあなたが訳したんですか？",
+  question: "この翻訳の、どこまでがあなたの判断だったと思いますか？",
+  matchNote: "表現の一致は、AIの影響や翻訳の独自性を直接示すものではありません。"
+};
+
+/* 体験記録の保存（未実装）。保存先が決まったら、ここに処理を書く */
+async function saveRecord(record){ if(!CONFIG.recording.enabled) return; /* TODO */ }
+
+/* =====================================================================
+   スタッフ用設定（Ctrl + Alt + S で開閉）。このブラウザにだけ保存されます
+   ===================================================================== */
+function loadStaff(){ try{ const s = JSON.parse(localStorage.getItem("tlab-staff")||"{}"); if(Number.isInteger(s.minMatchLength)&&s.minMatchLength>=1) CONFIG.minMatchLength=s.minMatchLength; if(Number.isInteger(s.minMatchWords)&&s.minMatchWords>=1) CONFIG.minMatchWords=s.minMatchWords; if(typeof s.forceTrial==="boolean") CONFIG.forceTrial=s.forceTrial; }catch(e){} }
+function saveStaff(){ try{ localStorage.setItem("tlab-staff",JSON.stringify({minMatchLength:CONFIG.minMatchLength,minMatchWords:CONFIG.minMatchWords,forceTrial:CONFIG.forceTrial})); }catch(e){} }
+loadStaff();
+
+/* =====================================================================
+   状態
+   ===================================================================== */
+const STEPS = ["はじめに","方向","難易度","原文","翻訳","見直し","レポート"];
+const STEP_OF = { intro:0, consent:0, direction:1, level:2, read:3, translate:4, review:5, revise:5, report:6 };
+const stepNo = v => STEP_OF[v] + 1;
+let state;
+function freshState(){
+  return {
+    view:"intro", consent:null, direction:null, level:null, comprehension:null,
+    ab:null, abError:null, abLoading:false,
+    method:null, methodFirst:null, methodChanges:[], pendingMethod:null,
+    draft:"", firstSubmission:"",
+    fb:null, fbError:null, fbLoading:false,
+    decision:null, reviseDraft:"", final:"",
+    hlFilter:"all", printMsg:""
+  };
+}
+state = freshState();
+let abCtl = null, fbCtl = null, abTok = 0, fbTok = 0;
+
+/* =====================================================================
+   AI 接続
+   ===================================================================== */
+// AIの接続方法：claude.ai の中では「sample」、独立版では自分のサーバー経由の「api」、どちらも無ければ「trial」
+let aiMode = "checking"; // checking | sample | api | trial
+const inClaude = !!(window.claude && typeof window.claude.use==="function");
+const samplePromise = (async()=>{
+  try{ if(!inClaude) return null; return await window.claude.use("sample"); }catch(e){ return null; }
+})();
+const downloadsPromise = (async()=>{
+  try{ if(!inClaude) return null; return await window.claude.use("downloads"); }catch(e){ return null; }
+})();
+async function pingApi(){
+  if(!CONFIG.ai.endpoint || !window.TLAB_PROMPTS) return false;
+  try{
+    const ctl = new AbortController(); const t = setTimeout(()=>ctl.abort(), 6000);
+    const r = await fetch(CONFIG.ai.endpoint, { method:"GET", signal:ctl.signal, cache:"no-store" });
+    clearTimeout(t);
+    if(!r.ok) return false;
+    const j = await r.json(); return !!(j && j.ok && j.configured);
+  }catch(e){ return false; }
+}
+(async()=>{
+  if(CONFIG.forceTrial){ aiMode="trial"; paintMode(); return; }
+  const s = await samplePromise;
+  if(s && window.TLAB_PROMPTS){ aiMode="sample"; paintMode(); return; }
+  aiMode = (await pingApi()) ? "api" : "trial"; paintMode();
+})();
+
+function paintMode(){
+  const m = document.getElementById("mode");
+  const on = aiMode==="sample" || aiMode==="api";
+  m.className = "mode " + (on?"ai":aiMode==="trial"?"trial":"");
+  m.textContent = on ? "AI接続：あり" : aiMode==="trial" ? "試用モード" : "AI接続を確認中…";
+  document.getElementById("trialbar").hidden = aiMode!=="trial";
+}
+const PERMANENT = ["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"];
+function errCopy(e){
+  const c = e && e.code;
+  if(PERMANENT.includes(c)) return "この画面ではAIを使えない状態です（許可されていない、または利用できない設定です）。試用モードで続けることができます。";
+  if(c==="rate_limited") return "AIの利用が混み合っています。少し時間をおいて、もう一度お試しください。";
+  if(c==="session_expired") return "Claudeへのログインが切れています。スタッフにお声がけください。";
+  if(c==="not_configured") return "AIの接続設定が完了していません。スタッフにお声がけください。試用モードで続けることもできます。";
+  if(c==="offline") return "インターネットに接続できませんでした。接続を確かめて、もう一度お試しください。";
+  if(c==="invalid_json"||c==="empty_completion") return "AIの回答をうまく受け取れませんでした。もう一度お試しください。";
+  if(c==="refused") return "この内容ではAIが回答できませんでした。翻訳の内容を少し変えて、もう一度お試しください。";
+  return "AIの生成に失敗しました。入力内容はそのまま残っています。もう一度お試しください。";
+}
+function dir(){ return CONFIG.directions.find(d=>d.id===state.direction) || CONFIG.directions[0]; }
+function lvl(){ return dir().levels.find(l=>l.id===state.level); }
+function matchK(){ return dir().targetMode==="word" ? CONFIG.minMatchWords : CONFIG.minMatchLength; }
+function str(v){ return typeof v==="string" && v.trim() ? v.trim() : null; }
+
+/* AIに頼む：claude.ai では sample、独立版ではサーバー（/api/generate）経由。指示文は prompts.js にあります */
+async function askAI(task, data, signal){
+  const P = window.TLAB_PROMPTS;
+  if(aiMode==="sample"){
+    const s = await samplePromise;
+    const prompt = task==="ab" ? P.ab(data) : P.feedback(data);
+    const opts = { modelTier:CONFIG.ai.modelTier, effort:CONFIG.ai.effort, signal };
+    if(task!=="ab" || !CONFIG.ai.cacheAB) opts.cache = false;
+    const out = P.check(task, await s.json(prompt, opts));
+    if(!out) throw { code:"invalid_json" };
+    return out;
+  }
+  let r;
+  try{
+    r = await fetch(CONFIG.ai.endpoint, { method:"POST", headers:{ "content-type":"application/json" }, body:JSON.stringify({ task, ...data }), signal });
+  }catch(e){
+    if(e && e.name==="AbortError") throw { code:"cancelled" };
+    throw { code: navigator.onLine===false ? "offline" : "upstream_error" };
+  }
+  let j = null; try{ j = await r.json(); }catch(e){}
+  if(!r.ok || !j || !j.result) throw { code:(j && j.error && j.error.code) || (r.status===429 ? "rate_limited" : "upstream_error") };
+  const out = P.check(task, j.result);
+  if(!out) throw { code:"invalid_json" };
+  return out;
+}
+
+async function generateAB(level, signal){
+  if(aiMode!=="sample" && aiMode!=="api") return { a:level.trial.a, b:level.trial.b, source:"trial" };
+  const d = dir();
+  const out = await askAI("ab", { from:d.from, to:d.to, kind:level.kind, source:level.source }, signal);
+  return { ...out, source:"ai" };
+}
+
+async function generateFeedback(level, ab, mine, signal){
+  if(aiMode!=="sample" && aiMode!=="api") return { trial:true, c:level.trial.c, source:"trial" };
+  const d = dir();
+  const out = await askAI("feedback", { from:d.from, to:d.to, kind:level.kind, source:level.source, a:ab.a, b:ab.b, mine }, signal);
+  return { ...out, source:"ai" };
+}
+
+function startAB(){
+  cancelAB(); const tok = abTok, level = lvl();
+  state.abLoading = true; state.abError = null; state.ab = null;
+  abCtl = new AbortController();
+  generateAB(level, abCtl.signal).then(ab=>{
+    if(tok!==abTok) return; state.ab = ab; state.abLoading=false; if(state.view==="translate") render();
+  }).catch(e=>{
+    if(tok!==abTok || (e&&e.code==="cancelled")) return;
+    state.abLoading=false; state.abError = e||{code:"upstream_error"}; if(state.view==="translate") render();
+  });
+}
+function cancelAB(){ abTok++; if(abCtl) abCtl.abort(); abCtl=null; state.abLoading=false; }
+function startFeedback(){
+  cancelFeedback(); const tok = fbTok, level = lvl();
+  state.fbLoading = true; state.fbError = null; state.fb = null;
+  fbCtl = new AbortController();
+  generateFeedback(level, state.ab, state.firstSubmission, fbCtl.signal).then(fb=>{
+    if(tok!==fbTok) return; state.fb = fb; state.fbLoading=false; if(state.view==="review") render();
+  }).catch(e=>{
+    if(tok!==fbTok || (e&&e.code==="cancelled")) return;
+    state.fbLoading=false; state.fbError = e||{code:"upstream_error"}; if(state.view==="review") render();
+  });
+}
+function cancelFeedback(){ fbTok++; if(fbCtl) fbCtl.abort(); fbCtl=null; state.fbLoading=false; state.fb=null; state.fbError=null; }
+function switchToTrial(){ aiMode="trial"; paintMode(); }
+
+/* =====================================================================
+   一致判定
+   ===================================================================== */
+const STRIP = /[\s\p{P}]/u;
+const WORDCH = /[\p{L}\p{N}]/u;
+// mode "char"：空白・改行・句読点を除いた1文字を単位にする（日本語訳）
+// mode "word"：英単語を単位にする。大文字・小文字と句読点は区別しない（英語訳）
+function normalize(text, mode){
+  const chars = Array.from(text||""); const norm=[]; const map=new Array(chars.length).fill(-1);
+  if(mode==="word"){
+    let inWord=false;
+    chars.forEach((ch,i)=>{
+      const apos = (ch==="'"||ch==="’") && inWord && i+1<chars.length && WORDCH.test(chars[i+1]);
+      if(WORDCH.test(ch) || apos){
+        if(!inWord){ norm.push(""); inWord=true; }
+        norm[norm.length-1] += apos ? "'" : ch.toLowerCase(); map[i]=norm.length-1;
+      } else inWord=false;
+    });
+  } else chars.forEach((ch,i)=>{ if(!STRIP.test(ch)){ map[i]=norm.length; norm.push(ch); } });
+  return { chars, norm, map, mode };
+}
+function coverage(finalNorm, otherText, k, mode){
+  const sep = mode==="word" ? " " : "";
+  const other = normalize(otherText, mode).norm;
+  const cov = new Array(finalNorm.length).fill(false);
+  if(!other.length || finalNorm.length<k) return cov;
+  const hay = sep + other.join(sep) + sep;
+  for(let i=0;i+k<=finalNorm.length;i++){
+    const w = sep + finalNorm.slice(i,i+k).join(sep) + sep;
+    if(hay.includes(w)) for(let j=i;j<i+k;j++) cov[j]=true;
+  }
+  return cov;
+}
+function analyze(final, sources, k, mode){
+  const n = normalize(final, mode);
+  const len = n.norm.length;
+  if(len===0) return { ok:false, reason:"empty", k, mode };
+  const covs = {}; for(const key of Object.keys(sources)) covs[key] = sources[key] ? coverage(n.norm, sources[key], k, mode) : new Array(len).fill(false);
+  const any = n.norm.map((_,i)=>Object.values(covs).some(c=>c[i]));
+  const count = arr => arr.filter(Boolean).length;
+  const per = {}; for(const key of Object.keys(covs)) per[key] = count(covs[key]);
+  return { ok:true, len, n, covs, any, common:count(any), per, k, mode };
+}
+function pct(x,len){ return Math.round(x/len*1000)/10; }
+
+/* =====================================================================
+   描画ユーティリティ
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ICON = {
+  pencil:`<svg width="38" height="38" viewBox="0 0 38 38" aria-hidden="true"><g transform="rotate(-40 19 19)"><rect x="4" y="15" width="24" height="8" fill="#f2c94c"/><rect x="4" y="15" width="5" height="8" fill="#9dbae2"/><polygon points="28,15 35,19 28,23" fill="#e7d9be"/><polygon points="33,18 35,19 33,20" fill="#1d2a45"/></g></svg>`,
+  noteA:`<svg width="38" height="38" viewBox="0 0 38 38" aria-hidden="true"><rect x="5" y="5" width="28" height="28" fill="#fbe683" stroke="#d2ad3a"/><text x="19" y="25" text-anchor="middle" font-family="serif" font-size="16" fill="#1d2a45">A</text></svg>`,
+  noteB:`<svg width="38" height="38" viewBox="0 0 38 38" aria-hidden="true"><rect x="5" y="5" width="28" height="28" fill="#fbe683" stroke="#d2ad3a"/><text x="19" y="25" text-anchor="middle" font-family="serif" font-size="16" fill="#1d2a45">B</text></svg>`
+};
+const LOADING = msg => `<div class="loading" role="status"><svg class="scribble" viewBox="0 0 120 28" aria-hidden="true"><path d="M2 18 C 14 4, 22 26, 34 14 S 56 4, 66 16 S 88 26, 98 12 S 112 8, 118 14"/></svg><span>${esc(msg)}</span></div>`;
+
+function paintTabs(){
+  const cur = STEP_OF[state.view];
+  $("#tabs").innerHTML = STEPS.map((s,i)=>`<div class="tab ${i<cur?"done":i===cur?"now":""}" ${i===cur?'aria-current="step"':""}><i>${i+1}</i>${esc(s)}</div>`).join("");
+}
+function go(view){ state.view=view; render(); window.scrollTo({top:0}); const h=$("#stage h1, #stage h2"); if(h){ h.setAttribute("tabindex","-1"); h.focus({preventScroll:true}); } }
+
+/* 「もどる」ボタン：各画面から、ひとつ前の画面にもどって選び直せる */
+const BACK = {
+  consent:   { to:"intro",     label:"はじめの画面にもどる" },
+  direction: { to:"consent",   label:"記録の同意にもどる" },
+  level:     { to:"direction", label:"翻訳の方向の選択にもどる" },
+  read:      { to:"level",     label:"文章の選択にもどる" },
+  translate: { to:"read",      label:"原文と理解度の選択にもどる" },
+  review:    { to:"translate", label:"翻訳の編集にもどる" },
+  revise:    { to:"review",    label:"コメントと訳Cにもどる" }
+};
+function backTarget(){
+  if(state.view==="report") return state.decision==="revise" ? { to:"revise", label:"翻訳の修正にもどる" } : { to:"review", label:"「修正するか」の選択にもどる" };
+  return BACK[state.view] || null;
+}
+function backBtn(){
+  const b = backTarget(); if(!b) return "";
+  return `<button class="back" id="back">${esc(b.label)}<span class="kbd">Esc</span></button>`;
+}
+function goBack(){
+  const b = backTarget(); if(!b) return;
+  const v = state.view;
+  state.pendingMethod = null;
+  if(v==="review") cancelFeedback();          // 編集にもどる：再提出すると、コメントと訳Cを作り直す
+  if(v==="revise") state.decision = null;     // 修正中の文章は残す
+  if(v==="report"){ if(state.decision==="keep") state.decision=null; state.final=""; state.printMsg=""; state.hlFilter="all"; }
+  go(b.to);
+}
+function render(){
+  paintTabs();
+  const v = state.view;
+  const st = $("#stage");
+  st.innerHTML = backBtn() + VIEWS[v]();
+  const bb = $("#back"); if(bb) bb.onclick = goBack;
+  BIND[v] && BIND[v]();
+}
+
+/* =====================================================================
+   画面
+   ===================================================================== */
+const VIEWS = {
+intro(){ return `
+  <section class="hero">
+    <div class="eyebrow">TRANSLATION LAB</div>
+    <h1>あなたなら、どう訳しますか？</h1>
+    <p>AIの翻訳を読みながら、あなた自身の訳をつくってみてください。</p>
+    <button class="bookmark" id="start">体験をはじめる</button>
+    <span class="hint"><span class="kbd">Enter</span> でも始められます</span>
+  </section>`; },
+
+consent(){ const r=CONFIG.recording; return `
+  <section class="consent">
+    <div class="eyebrow">はじめる前に</div>
+    <h2>${esc(r.consentTitle)}</h2>
+    <div class="box">${r.consentBody.map(p=>`<p>${esc(p)}</p>`).join("")}
+      ${r.enabled?"":`<p class="hint">${esc(r.disabledNote)}</p>`}</div>
+    <div class="row">
+      <button class="bookmark" id="agree">同意して進む</button>
+      <button class="ghost" id="disagree">同意せずに体験する</button>
+    </div>
+  </section>`; },
+
+direction(){ return `
+  <div><div class="eyebrow">STEP ${stepNo("direction")}</div><h2>どちらの方向に訳しますか？</h2></div>
+  <div class="shelf dirs" role="group" aria-label="翻訳の方向">
+    ${CONFIG.directions.map((d,i)=>`<button class="vol" data-dir="${d.id}" aria-pressed="${state.direction===d.id}"><span class="label"></span><span class="lv">${i+1}</span><span class="nm">${esc(d.label)}</span><span class="ds">${esc(d.desc)}</span></button>`).join("")}
+  </div>
+  <p class="hint">数字キー ${CONFIG.directions.map((_,i)=>`<span class="kbd">${i+1}</span>`).join(" ")} でも選べます</p>`; },
+
+level(){ return `
+  <div><div class="eyebrow">STEP ${stepNo("level")} ・ ${esc(dir().label)}</div><h2>訳してみる文章を選んでください</h2></div>
+  <div class="shelf" role="group" aria-label="難易度">
+    ${dir().levels.map((l,i)=>`<button class="vol" data-level="${l.id}" aria-pressed="${state.level===l.id}"><span class="label"></span><span class="lv">${esc(l.label)}</span><span class="nm">${esc(l.name)}</span><span class="ds">${esc(l.desc)}</span></button>`).join("")}
+  </div>
+  <p class="hint">数字キー <span class="kbd">1</span> <span class="kbd">2</span> <span class="kbd">3</span> でも選べます</p>`; },
+
+read(){ const l=lvl(); return `
+  <div><div class="eyebrow">STEP ${stepNo("read")} ・ ${esc(dir().label)} ・ ${esc(l.label)} ${esc(l.name)}</div><h2>まず、原文を読んでください</h2></div>
+  <div class="source">${esc(l.source)}</div>
+  <div style="display:flex;flex-direction:column;gap:22px">
+    <h3 style="font-size:var(--s-lg)">この文章を、自分で訳せそうですか？</h3>
+    <div class="notes" role="group" aria-label="理解度">
+      ${CONFIG.comprehension.map((c,i)=>`<button class="note" data-comp="${c.id}" aria-pressed="${state.comprehension===c.id}"><span class="k">${i+1}</span><span class="t">${esc(c.t)}</span><span class="d">${esc(c.d)}</span></button>`).join("")}
+    </div>
+  </div>
+  <div class="row"><button class="bookmark" id="toAI" ${state.comprehension?"":"disabled"}>AIの翻訳を見る</button>
+  ${state.comprehension?"":`<span class="hint">ひとつ選ぶと進めます</span>`}</div>`; },
+
+translate(){ const l=lvl();
+  let abHtml;
+  if(state.ab){
+    const lab = state.ab.source==="ai" ? "AIがこの場で生成" : "試用モード：用意した例文";
+    abHtml = `<div class="cards">
+      <div class="card"><span class="tag">訳A</span><div class="body">${esc(state.ab.a)}</div><div class="src">${lab}</div></div>
+      <div class="card"><span class="tag">訳B</span><div class="body">${esc(state.ab.b)}</div><div class="src">${lab}</div></div></div>`;
+  } else if(state.abError){
+    const perm = PERMANENT.includes(state.abError.code);
+    abHtml = `<div class="errbox" role="alert"><p>${esc(errCopy(state.abError))}</p><div class="row">
+      ${perm?"":`<button class="ghost" id="retryAB">もう一度試す</button>`}<button class="ghost" id="trialAB">試用モードで続ける</button></div></div>`;
+  } else abHtml = LOADING("AIが訳案A・Bを書いています…（数十秒かかることがあります）");
+
+  const m = state.method;
+  const editor = m ? `
+    <div class="editor">
+      <label for="draft">あなたの翻訳</label>
+      <textarea class="ruled" id="draft" spellcheck="false" placeholder="${m==="own"?"ここに、あなたの訳を書いてください":""}">${esc(state.draft)}</textarea>
+      <div class="row"><button class="bookmark" id="submit1" ${state.draft.trim()?"":"disabled"}>この翻訳を提出する</button>
+      <span class="hint" id="h1">${state.draft.trim()?`<span class="kbd">Ctrl</span> + <span class="kbd">Enter</span> でも提出できます`:"空欄のままでは提出できません"}</span></div>
+    </div>` : `<p class="hint">左の訳案を参考に、すすめ方を選んでください。</p>`;
+  const confirm = state.pendingMethod ? `<div class="confirm" role="alert"><span>「${esc(CONFIG.methods[state.pendingMethod])}」に切り替えると、いま書いている内容は置き換わります。</span>
+    <button class="ghost" id="pmYes">切り替える</button><button class="ghost" id="pmNo">やめる</button></div>` : "";
+  return `
+  <div><div class="eyebrow">STEP ${stepNo("translate")} ・ ${esc(dir().label)} ・ ${esc(l.label)} ${esc(l.name)}</div><h2>訳案を読んで、あなたの訳をつくってください</h2></div>
+  <div class="wide">
+    <div><div class="hint" style="margin-bottom:6px">原文</div><div class="source small">${esc(l.source)}</div></div>
+    ${abHtml}
+  </div>
+  <div class="wide work">
+      <div class="picker" role="group" aria-label="すすめ方">
+        <button class="pick" data-method="a" aria-pressed="${m==="a"}" ${state.ab?"":"disabled"}>${ICON.noteA}<span>${CONFIG.methods.a}<small>訳Aが編集欄に入ります</small></span></button>
+        <button class="pick" data-method="b" aria-pressed="${m==="b"}" ${state.ab?"":"disabled"}>${ICON.noteB}<span>${CONFIG.methods.b}<small>訳Bが編集欄に入ります</small></span></button>
+        <button class="pick" data-method="own" aria-pressed="${m==="own"}" ${state.ab?"":"disabled"}>${ICON.pencil}<span>${CONFIG.methods.own}<small>空の編集欄から書きはじめます</small></span></button>
+      </div>
+      ${confirm}
+      ${editor}
+  </div>`; },
+
+review(){ const l=lvl(); const fb=state.fb;
+  let fbHtml;
+  if(fb && fb.trial){
+    const t=CONFIG.trialFeedback;
+    fbHtml = `<p class="lead">${esc(t.lead)}</p><div class="fb">
+      <div><h3>この表現の良いところ</h3><p>${esc(t.good)}</p></div>
+      <div><h3>原文と少しずれているところ</h3><p>${esc(t.gap)}</p></div>
+      <div><h3>もう少し自然にできるところ</h3><p>${esc(t.natural)}</p></div></div>`;
+  } else if(fb){
+    fbHtml = `<div class="fb">
+      <div><h3>この表現の良いところ</h3><p>${esc(fb.good)}</p></div>
+      <div><h3>原文と少しずれているところ</h3><p>${esc(fb.gap)}</p></div>
+      <div><h3>もう少し自然にできるところ</h3><p>${esc(fb.natural)}</p></div></div>
+      <p class="genmark">AIがあなたの訳を読んで書いたコメントです。${l.kind==="poem"?"詩・俳句には、いくつもの読み方があります。":""}</p>`;
+  } else if(state.fbError){
+    const perm = PERMANENT.includes(state.fbError.code);
+    fbHtml = `<div class="errbox" role="alert"><p>${esc(errCopy(state.fbError))}</p><div class="row">
+      ${perm?"":`<button class="ghost" id="retryFB">もう一度試す</button>`}<button class="ghost" id="trialFB">試用モードで続ける</button></div></div>`;
+  } else fbHtml = LOADING("AIがあなたの訳を読んでいます…（数十秒かかることがあります）");
+
+  const cHtml = fb ? `<div class="card c" style="max-width:640px"><span class="tag">訳C</span><div class="body">${esc(fb.c)}</div><div class="src">${fb.source==="ai"?"AIがこの場で生成した、新しい訳案":"試用モード：用意した例文（あなたの訳に合わせたものではありません）"}</div></div>` : "";
+  const ask = fb ? `<div style="display:flex;flex-direction:column;gap:18px">
+      <h3 style="font-size:var(--s-lg)">先ほどの翻訳を修正しますか？</h3>
+      <div class="notes" role="group" aria-label="修正するかどうか" style="grid-template-columns:repeat(2,minmax(0,1fr));max-width:720px">
+        <button class="note" data-dec="revise"><span class="k">1</span><span class="t">修正する</span><span class="d">提出した訳を、もう一度書き直します</span></button>
+        <button class="note" data-dec="keep"><span class="k">2</span><span class="t">このまま完成する</span><span class="d">提出した訳を、最終版にします</span></button>
+      </div></div>` : "";
+  return `
+  <div><div class="eyebrow">STEP ${stepNo("review")}</div><h2>あなたの訳へのコメントと、新しい訳案</h2></div>
+  <div><div class="hint" style="margin-bottom:6px">あなたが提出した訳</div><div class="mine">${esc(state.firstSubmission)}</div></div>
+  ${fbHtml}
+  ${cHtml}
+  ${ask}`; },
+
+revise(){ const l=lvl(); return `
+  <div><div class="eyebrow">STEP ${stepNo("revise")} ・ 修正</div><h2>あなたの訳を、もう一度書き直せます</h2></div>
+  <div class="wide">
+    <div><div class="hint" style="margin-bottom:6px">原文</div><div class="source small">${esc(l.source)}</div></div>
+    <div class="cards three">
+      <div class="card"><span class="tag">訳A</span><div class="body">${esc(state.ab.a)}</div></div>
+      <div class="card"><span class="tag">訳B</span><div class="body">${esc(state.ab.b)}</div></div>
+      <div class="card c"><span class="tag">訳C</span><div class="body">${esc(state.fb.c)}</div></div>
+    </div>
+  </div>
+  <div class="cols even">
+    <div class="card mineprev"><span class="tag">編集前のあなたの訳</span><div class="body">${esc(state.firstSubmission)}</div></div>
+    <div class="editor">
+      <label for="draft2">あなたの翻訳（修正版）</label>
+      <textarea class="ruled" id="draft2" spellcheck="false" style="min-height:300px">${esc(state.reviseDraft)}</textarea>
+      <div class="row"><button class="bookmark" id="submit2" ${state.reviseDraft.trim()?"":"disabled"}>この翻訳で完成する</button>
+      <span class="hint" id="h2">${state.reviseDraft.trim()?`<span class="kbd">Ctrl</span> + <span class="kbd">Enter</span> でも完成できます`:"空欄のままでは完成できません"}</span></div>
+    </div>
+  </div>`; },
+
+report(){ const l=lvl(); const R=buildReport();
+  const meter = R.an.ok ? `
+      <div class="big"><div><b>${R.commonPct}<small style="font-size:.5em">%</small></b><span>AI案と共通する表現</span></div><div><b>${R.otherPct}<small style="font-size:.5em">%</small></b><span>共通しない表現</span></div></div>
+      <div class="bar" aria-hidden="true"><i style="width:${R.commonPct}%"></i></div>
+      <div class="breakdown">
+        <div><span><i class="sw" style="background:var(--hl-a)"></i>訳Aと共通</span><b>${R.perPct.a}%</b></div>
+        <div><span><i class="sw" style="background:var(--hl-b)"></i>訳Bと共通</span><b>${R.perPct.b}%</b></div>
+        <div><span><i class="sw" style="background:var(--hl-c)"></i>訳Cと共通</span><b>${R.perPct.c}%</b></div>
+        <div><span><i class="sw" style="background:#fff"></i>どの訳案とも共通しない表現</span><b>${R.otherPct}%</b></div>
+      </div>
+      <p class="note-small">複数の訳案と同時に共通する部分は、それぞれの訳案に数えています。そのため内訳の合計は「共通する表現」の値を超えることがあります。</p>`
+    : `<p>最終翻訳から比べられる${R.unit}がないため、割合を算出できません。</p>`;
+  return `
+  <div class="row" style="justify-content:space-between"><div><div class="eyebrow">STEP ${stepNo("report")}</div><h2>翻訳レポート</h2></div><span class="stamp">${esc(R.dateStr)}</span></div>
+  <div class="report">
+    <div class="lcard">
+      <h3>あなたの翻訳の記録</h3>
+      <dl style="margin:0">
+        <div class="li"><dt>翻訳の方向</dt><dd>${esc(dir().label)}</dd></div>
+        <div class="li"><dt>難易度</dt><dd>${esc(l.label)}　${esc(l.name)}</dd></div>
+        <div class="li"><dt>原文</dt><dd class="en">${esc(l.source)}</dd></div>
+        <div class="li"><dt>AIの訳を見る前の理解度</dt><dd>${esc(R.comp)}</dd></div>
+        <div class="li"><dt>最初に選んだ方法</dt><dd>${esc(R.method)}</dd></div>
+        <div class="li"><dt>最初に提出した翻訳</dt><dd class="hand">${esc(state.firstSubmission)}</dd></div>
+        <div class="li"><dt>コメントと訳Cを見た後</dt><dd>${esc(R.revised)}</dd></div>
+        <div class="li" style="border-bottom:none"><dt>最終的な翻訳</dt><dd class="hand">${esc(state.final)}</dd></div>
+      </dl>
+    </div>
+    <div class="meter">
+      <div><div class="eyebrow" style="margin-bottom:4px">AI案と共通する表現の割合</div><p class="note-small">${esc(R.ruleText)}</p></div>
+      ${meter}
+      <p class="note-small"><b>${esc(CONFIG.matchNote)}</b></p>
+    </div>
+  </div>
+  ${R.an.ok?`<div style="display:flex;flex-direction:column;gap:12px">
+    <div class="row" style="justify-content:space-between"><h3 style="font-size:var(--s-lg)">最終翻訳の中の一致箇所</h3>
+      <div class="filters" role="group" aria-label="表示する訳案">${[["all","すべて"],["a","訳A"],["b","訳B"],["c","訳C"]].map(([k,t])=>`<button class="chip" data-hl="${k}" aria-pressed="${state.hlFilter===k}">${t}</button>`).join("")}</div></div>
+    <div class="hltext" id="hltext">${highlightHTML(R.an, state.hlFilter)}</div>
+    <p class="note-small">印の付いた部分にカーソルを合わせると、どの訳案と一致しているかが表示されます。2色の縞は、複数の訳案と一致している部分です。</p>
+  </div>`:""}
+  <p class="question">${esc(CONFIG.question)}</p>
+  <div class="row" style="justify-content:center">
+    <button class="ghost" id="print">レポートを印刷する</button>
+    <button class="bookmark" id="next">次の方へ／最初に戻る</button>
+  </div>
+  <p class="hint" style="text-align:center" id="printMsg">${esc(state.printMsg)}</p>`; }
+};
+
+/* =====================================================================
+   操作
+   ===================================================================== */
+function setMethod(m){
+  const fill = m==="a"?state.ab.a : m==="b"?state.ab.b : "";
+  if(!state.methodFirst) state.methodFirst = m;
+  else if(state.method!==m) state.methodChanges.push(m);
+  state.method = m; state.draft = fill; state.pendingMethod=null;
+  render(); const ta=$("#draft"); if(ta){ ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length); }
+}
+function bindEditor(id, key, btnId, hintId, okHint, emptyHint, onSubmit){
+  const ta = $(id); if(!ta) return;
+  ta.addEventListener("input",()=>{ state[key]=ta.value; const ok=!!ta.value.trim(); $(btnId).disabled=!ok; $(hintId).innerHTML = ok?okHint:emptyHint; });
+  ta.addEventListener("keydown",e=>{ if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)&&!e.isComposing){ e.preventDefault(); if(state[key].trim()) onSubmit(); } });
+  $(btnId).addEventListener("click",()=>{ if(state[key].trim()) onSubmit(); });
+}
+const BIND = {
+  intro(){ $("#start").onclick=()=>go("consent"); },
+  consent(){ $("#agree").onclick=()=>{state.consent=true;go("direction");}; $("#disagree").onclick=()=>{state.consent=false;go("direction");}; },
+  direction(){ document.querySelectorAll("[data-dir]").forEach(b=>b.onclick=()=>chooseDirection(b.dataset.dir)); },
+  level(){ document.querySelectorAll("[data-level]").forEach(b=>b.onclick=()=>chooseLevel(+b.dataset.level)); },
+  read(){
+    document.querySelectorAll("[data-comp]").forEach(b=>b.onclick=()=>{ state.comprehension=b.dataset.comp; render(); $("#toAI").focus(); });
+    $("#toAI").onclick=()=>{ if(state.comprehension) go("translate"); };
+  },
+  translate(){
+    document.querySelectorAll("[data-method]").forEach(b=>b.onclick=()=>{
+      const m=b.dataset.method; if(m===state.method) return;
+      const edited = state.method && state.draft.trim() && state.draft !== (state.method==="a"?state.ab.a:state.method==="b"?state.ab.b:"");
+      if(edited){ state.pendingMethod=m; render(); $("#pmYes").focus(); } else setMethod(m);
+    });
+    if($("#pmYes")){ $("#pmYes").onclick=()=>setMethod(state.pendingMethod); $("#pmNo").onclick=()=>{state.pendingMethod=null;render();}; }
+    if($("#retryAB")) $("#retryAB").onclick=()=>{ startAB(); render(); };
+    if($("#trialAB")) $("#trialAB").onclick=()=>{ switchToTrial(); startAB(); render(); };
+    bindEditor("#draft","draft","#submit1","#h1",`<span class="kbd">Ctrl</span> + <span class="kbd">Enter</span> でも提出できます`,"空欄のままでは提出できません",()=>{
+      state.firstSubmission = state.draft.trim(); state.decision=null; state.reviseDraft=""; startFeedback(); go("review");
+    });
+  },
+  review(){
+    if($("#retryFB")) $("#retryFB").onclick=()=>{ startFeedback(); render(); };
+    if($("#trialFB")) $("#trialFB").onclick=()=>{ switchToTrial(); startFeedback(); render(); };
+    document.querySelectorAll("[data-dec]").forEach(b=>b.onclick=()=>decide(b.dataset.dec));
+  },
+  revise(){
+    bindEditor("#draft2","reviseDraft","#submit2","#h2",`<span class="kbd">Ctrl</span> + <span class="kbd">Enter</span> でも完成できます`,"空欄のままでは完成できません",()=>{
+      state.final = state.reviseDraft.trim(); finish();
+    });
+    const ta=$("#draft2"); ta.focus(); ta.setSelectionRange(ta.value.length,ta.value.length);
+  },
+  report(){
+    document.querySelectorAll("[data-hl]").forEach(b=>b.onclick=()=>{ state.hlFilter=b.dataset.hl; render(); const f=document.querySelector(`[data-hl="${state.hlFilter}"]`); f&&f.focus(); });
+    $("#print").onclick=printCard;
+    $("#next").onclick=reset;
+  }
+};
+function chooseDirection(id){
+  if(state.direction!==id){
+    cancelAB(); cancelFeedback();
+    Object.assign(state,{ direction:id, level:null, comprehension:null, ab:null, abError:null, method:null, methodFirst:null, methodChanges:[], pendingMethod:null,
+      draft:"", firstSubmission:"", decision:null, reviseDraft:"", final:"" });
+  }
+  go("level");
+}
+function chooseLevel(id){
+  if(state.level!==id){
+    cancelAB(); cancelFeedback();
+    Object.assign(state,{ level:id, comprehension:null, ab:null, abError:null, method:null, methodFirst:null, methodChanges:[], pendingMethod:null,
+      draft:"", firstSubmission:"", decision:null, reviseDraft:"", final:"" });
+  }
+  // 原文を読んでいる間に訳案を用意しておく（表示はSTEP 4から）。同じ文章にもどった場合は作り直さない
+  if(!state.ab && !state.abLoading) startAB();
+  go("read");
+}
+function decide(d){
+  state.decision=d;
+  if(d==="keep"){ state.final=state.firstSubmission; finish(); }
+  else { if(!state.reviseDraft) state.reviseDraft=state.firstSubmission; go("revise"); }
+}
+function finish(){
+  saveRecord(state.consent ? buildRecord() : null).catch(()=>{});
+  go("report");
+}
+function reset(){
+  cancelAB(); cancelFeedback();
+  state = freshState();
+  go("intro");
+}
+function buildRecord(){
+  return { at:new Date().toISOString(), level:state.level, comprehension:state.comprehension, methodFirst:state.methodFirst, methodChanges:state.methodChanges,
+    direction:state.direction, abSource:state.ab&&state.ab.source, fbSource:state.fb&&state.fb.source, firstSubmission:state.firstSubmission, decision:state.decision, final:state.final, minMatch:matchK(), matchUnit:dir().targetMode };
+}
+
+/* ---- report helpers ---- */
+function buildReport(){
+  const comp = (CONFIG.comprehension.find(c=>c.id===state.comprehension)||{}).t || "—";
+  let method = CONFIG.methods[state.methodFirst] || "—";
+  if(state.methodChanges.length) method += `（その後「${CONFIG.methods[state.methodChanges[state.methodChanges.length-1]]}」に切り替え）`;
+  let revised;
+  if(state.decision==="keep") revised = "修正せずに完成した";
+  else revised = state.final===state.firstSubmission ? "修正画面を開いたが、変更せずに完成した" : "修正した";
+  const an = analyze(state.final, { a:state.ab&&state.ab.a, b:state.ab&&state.ab.b, c:state.fb&&state.fb.c }, matchK(), dir().targetMode);
+  const word = dir().targetMode==="word";
+  const unit = word ? "語" : "文字";
+  const ruleText = word
+    ? `大文字・小文字と句読点を区別せず、訳A・B・Cのいずれかと連続して${an.k}語以上一致する部分を、語数で数えた参考値です。`
+    : `空白・改行・句読点を除き、訳A・B・Cのいずれかと連続して${an.k}文字以上一致する部分を数えた参考値です。`;
+  const ruleShort = word ? `連続${an.k}語以上の一致（語数で計算）` : `空白・句読点を除き連続${an.k}文字以上の一致`;
+  let commonPct=0, otherPct=0, perPct={a:0,b:0,c:0};
+  if(an.ok){ commonPct=pct(an.common,an.len); otherPct=Math.round((100-commonPct)*10)/10; for(const k of ["a","b","c"]) perPct[k]=pct(an.per[k],an.len); }
+  const d=new Date(); const dateStr=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;
+  return { comp, method, revised, an, commonPct, otherPct, perPct, dateStr, unit, ruleText, ruleShort };
+}
+const HL = { a:"var(--hl-a)", b:"var(--hl-b)", c:"var(--hl-c)" };
+const HLHEX = { a:"#f8df76", b:"#bcd5f4", c:"#c5e6d4" };
+function markStyle(keys, palette){
+  if(keys.length===1) return `background:${palette[keys[0]]}`;
+  return `background:repeating-linear-gradient(135deg,${keys.map((k,i)=>`${palette[k]} ${i*6}px ${(i+1)*6}px`).join(",")})`;
+}
+function highlightHTML(an, filter, palette=HL){
+  const { chars, map } = an.n; let out=""; let cur=null; let buf="";
+  const keysAt = i => { const ni=map[i]; if(ni<0) return null; const ks=["a","b","c"].filter(k=>an.covs[k][ni]); return ks; };
+  const flush = () => { if(!buf) return; if(cur&&cur.length){ const label="訳"+cur.map(k=>k.toUpperCase()).join("・訳")+"と一致"; const dim = filter!=="all" && !cur.includes(filter); out+=`<mark class="${dim?"dim":""}" style="${markStyle(cur,palette)}" title="${label}">${esc(buf)}</mark>`; } else out+=esc(buf); buf=""; };
+  let prevKeys = null;
+  chars.forEach((ch,i)=>{
+    let ks = keysAt(i);
+    if(ks===null){ // 句読点・空白は、前後が同じ一致なら印を続ける
+      const next = (()=>{ for(let j=i+1;j<chars.length;j++){ const k=keysAt(j); if(k!==null) return k; } return []; })();
+      ks = (prevKeys && prevKeys.length && prevKeys.join()===next.join()) ? prevKeys : [];
+    } else prevKeys = ks;
+    const key = ks.join();
+    if(cur===null || key!==cur.join()){ flush(); cur=ks; }
+    buf+=ch;
+  });
+  flush();
+  return out;
+}
+
+/* ---- printable A6 card ---- */
+function buildCardHTML(){
+  const l=lvl(); const R=buildReport();
+  const hl = R.an.ok ? highlightHTML(R.an,"all",HLHEX) : esc(state.final);
+  const meter = R.an.ok
+    ? `<div class="m"><div><b>${R.commonPct}%</b>AI案と共通する表現</div><div><b>${R.otherPct}%</b>共通しない表現</div></div>
+       <p class="sm">内訳（重複あり）：訳A ${R.perPct.a}%／訳B ${R.perPct.b}%／訳C ${R.perPct.c}%　判定：${esc(R.ruleShort)}</p>`
+    : `<p class="sm">最終翻訳から比べられる${R.unit}がないため、割合を算出できません。</p>`;
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>翻訳カード</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@700&family=Zen+Kaku+Gothic+New:wght@400;700&family=Klee+One:wght@600&display=swap">
+<style>
+@page{size:105mm 148mm;margin:0}
+*{box-sizing:border-box}html,body{margin:0;background:#fff;color:#1d2a45}
+body{font-family:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.card{width:105mm;height:148mm;padding:7mm 7mm 6mm 10mm;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:1.6mm;border-left:3mm solid #2c5aa0;background:linear-gradient(160deg,#fffdf5 0%,#fdf3c6 45%,#dfe9f7 100%)}
+.card::after{content:"";position:absolute;right:6mm;top:0;width:4mm;height:9mm;background:#f2c94c;clip-path:polygon(0 0,100% 0,100% 100%,50% 75%,0 100%)}
+h1{font-family:"Zen Old Mincho",serif;font-size:1.25em;margin:0;line-height:1.35;padding-right:8mm}
+.lab{font-size:.68em;letter-spacing:.12em;color:#77849f}
+.r{display:grid;grid-template-columns:22mm 1fr;gap:2mm;border-bottom:.2mm solid #c4d1e6;padding:1mm 0}
+.r span{font-size:.72em;color:#77849f}.r div{white-space:pre-wrap;word-break:break-word}
+.hand{font-family:"Klee One",sans-serif}.en{font-family:"Zen Old Mincho",Georgia,serif}
+.m{display:flex;gap:2mm}.m div{flex:1;border:.2mm solid #c4d1e6;background:#fff;padding:1mm 2mm;font-size:.72em}
+.m b{display:block;font-family:"Zen Old Mincho",serif;font-size:1.9em;line-height:1.1}
+.sm{font-size:.66em;color:#44557a;margin:0;line-height:1.5}
+.q{font-family:"Zen Old Mincho",serif;font-size:.95em;margin-top:auto;border-top:.3mm solid #2c5aa0;padding-top:1.5mm}
+mark{color:inherit}
+@media screen{body{display:flex;justify-content:center;padding:20px;background:#c9d7ec}.card{box-shadow:0 6px 20px rgba(0,0,0,.25)}}
+</style></head><body><div class="card" id="card" style="font-size:9pt">
+<div class="lab">TRANSLATION LAB ・ ${esc(R.dateStr)}</div>
+<h1>${esc(CONFIG.workTitle)}</h1>
+<div class="r"><span>翻訳の方向</span><div>${esc(dir().label)}</div></div>
+<div class="r"><span>難易度</span><div>${esc(l.label)} ${esc(l.name)}</div></div>
+<div class="r"><span>原文</span><div class="en">${esc(l.source)}</div></div>
+<div class="r"><span>見る前の理解度</span><div>${esc(R.comp)}</div></div>
+<div class="r"><span>最初の方法</span><div>${esc(R.method)}</div></div>
+<div class="r"><span>最初の翻訳</span><div class="hand">${esc(state.firstSubmission)}</div></div>
+<div class="r"><span>コメントの後</span><div>${esc(R.revised)}</div></div>
+<div class="r"><span>最終的な翻訳</span><div class="hand">${hl}</div></div>
+${meter}
+<p class="sm">${esc(CONFIG.matchNote)}</p>
+<p class="q">${esc(CONFIG.question)}</p>
+</div>
+<script>
+(function(){var c=document.getElementById('card'),s=9;function fit(){while(c.scrollHeight>c.clientHeight+1&&s>5.5){s-=.25;c.style.fontSize=s+'pt';}}
+(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){fit();setTimeout(function(){window.print();},300);});})();
+<\/script></body></html>`;
+}
+async function printCard(){
+  const msg = t => { state.printMsg=t; const el=$("#printMsg"); if(el) el.textContent=t; };
+  if(!inClaude){ // 独立版：その場で印刷画面を開く
+    const old = document.getElementById("printFrame"); if(old) old.remove();
+    const f = document.createElement("iframe");
+    f.id = "printFrame"; f.title = "印刷用カード"; f.setAttribute("aria-hidden","true");
+    f.style.cssText = "position:fixed;left:-10000px;top:0;width:105mm;height:148mm;border:0";
+    f.srcdoc = buildCardHTML();
+    document.body.appendChild(f);
+    msg("印刷画面を開いています…（A6・105×148mm）");
+    setTimeout(()=>msg("印刷画面が出ない場合は、もう一度ボタンを押してください。"), 4000);
+    return;
+  }
+  const dl = await downloadsPromise;
+  if(!dl){ msg("この画面からは印刷用ファイルを保存できません。スタッフにお声がけください。"); return; }
+  msg("印刷用カード（A6）のファイルを保存します。確認の画面で「保存」を選んでください。");
+  try{
+    await dl.save({ filename:`translation-card-${Date.now()}.html`, data:buildCardHTML() });
+    msg("保存しました。保存したファイルを開くと、A6サイズの印刷画面が表示されます。");
+  }catch(e){
+    msg(e&&e.code==="declined" ? "保存を取りやめました。" : "印刷用ファイルを保存できませんでした。もう一度お試しください。");
+  }
+}
+
+/* ---- keyboard ---- */
+document.addEventListener("keydown",e=>{
+  if(e.ctrlKey&&e.altKey&&(e.key==="s"||e.key==="S"||e.code==="KeyS")){ e.preventDefault(); toggleStaff(); return; }
+  const tag=(e.target&&e.target.tagName)||"";
+  if(e.key==="Escape" && !e.isComposing){
+    const sp=$("#staff"); if(!sp.hidden){ sp.hidden=true; return; }
+    if(state.pendingMethod){ state.pendingMethod=null; render(); return; }
+    if(tag!=="TEXTAREA" && tag!=="INPUT"){ e.preventDefault(); goBack(); }
+    return;
+  }
+  if(tag==="TEXTAREA"||tag==="INPUT"||e.isComposing||e.ctrlKey||e.metaKey||e.altKey) return;
+  const n = +e.key;
+  if(state.view==="intro" && e.key==="Enter" && tag!=="BUTTON"){ e.preventDefault(); go("consent"); return; }
+  if(!(n>=1&&n<=3)) return;
+  if(state.view==="direction" && CONFIG.directions[n-1]) chooseDirection(CONFIG.directions[n-1].id);
+  else if(state.view==="level" && dir().levels[n-1]) chooseLevel(dir().levels[n-1].id);
+  else if(state.view==="read" && CONFIG.comprehension[n-1]){ state.comprehension=CONFIG.comprehension[n-1].id; render(); $("#toAI").focus(); }
+  else if(state.view==="review" && state.fb && n<=2) decide(n===1?"revise":"keep");
+});
+function toggleStaff(){
+  const p=$("#staff"); if(!p.hidden){ p.hidden=true; return; }
+  p.innerHTML=`<b>スタッフ設定</b>
+    <label>日本語訳：一致とみなす最小文字数 <input type="number" id="sMin" min="1" max="20" value="${CONFIG.minMatchLength}"></label>
+    <label>英語訳：一致とみなす最小語数 <input type="number" id="sMinW" min="1" max="10" value="${CONFIG.minMatchWords}"></label>
+    <label><input type="checkbox" id="sTrial" ${CONFIG.forceTrial?"checked":""}> 常に試用モードにする</label>
+    <span class="hint">このブラウザにだけ保存されます。試用モードの切り替えはページの再読み込み後に反映されます。</span>
+    <div class="row"><button class="ghost" id="sSave">保存して閉じる</button></div>`;
+  p.hidden=false;
+  $("#sSave").onclick=()=>{ const v=parseInt($("#sMin").value,10); if(v>=1&&v<=20) CONFIG.minMatchLength=v; const vw=parseInt($("#sMinW").value,10); if(vw>=1&&vw<=10) CONFIG.minMatchWords=vw; CONFIG.forceTrial=$("#sTrial").checked; saveStaff(); if(CONFIG.forceTrial){aiMode="trial";paintMode();} p.hidden=true; if(state.view==="report") render(); };
+  $("#sMin").focus();
+}
+
+paintMode();
+render();
+</script>
+</body>
+</html>
